@@ -3,23 +3,18 @@
 #include <getopt.h>
 #include <string>
 #include <algorithm>
+#include <vector>
 
-enum Operator
-{
-    plus,
-    minus, 
-    divi,
-    mult
-};
+#include "tokens.h"
 
 Operator getOp(char c)
 {
     switch(c)
     {
-        case '+':   return Operator::plus;
-        case '-':   return Operator::minus;
-        case '*':   return Operator::mult;
-        case '/':   return Operator::divi;
+        case '+':   return Operator::Plus;
+        case '-':   return Operator::Minus;
+        case '*':   return Operator::Mult;
+        case '/':   return Operator::Div;
         default:    throw std::runtime_error("Error: Undefined operator");
     }
 }
@@ -28,10 +23,10 @@ int calc(int first, int second, Operator op)
 {
     switch(op)
     {
-        case Operator::plus:    return first + second;
-        case Operator::minus:   return first - second;
-        case Operator::divi:     return first / second;
-        case Operator::mult:    return first * second;
+        case Operator::Plus:    return first + second;
+        case Operator::Minus:   return first - second;
+        case Operator::Div:     return first / second;
+        case Operator::Mult:    return first * second;
     }
 }
 
@@ -60,13 +55,21 @@ int parseInt(std::string::iterator& it)
     else throw std::runtime_error("Error: Found unexpected non-integer.\n");       
 }
 
-int main(int argc, char* argv[])
+Operator parseOperator(std::string::iterator& it)
+{
+    trimLeadingWhitespace(it);
+    Operator op = getOp(*it);
+    it++;
+    return op;
+}
+
+void old_parse()
 {
     std::string line;
 
     while(std::getline(std::cin, line))
     {
-        if(line == "exit") return 0;
+        if(line == "exit") return;
 
         std::string::iterator it = line.begin();
         int sum;
@@ -83,8 +86,7 @@ int main(int argc, char* argv[])
                     {
                         int val = parseInt(it); 
                         sum = calc(sum, val, op);
-                    }
-                    
+                    }  
                 }
                 catch(const std::exception& e)
                 {
@@ -96,9 +98,7 @@ int main(int argc, char* argv[])
             {
                 try
                 {
-                    trimLeadingWhitespace(it);
-                    op = getOp(*it);
-                    it++;
+                    op = parseOperator(it);
                 }
                 catch(const std::exception& e)
                 {
@@ -110,6 +110,61 @@ int main(int argc, char* argv[])
 
         std::cout << sum << "\n";
         readline:;
+    }
+}
+
+std::vector<Token*> tokenize(std::string line)
+{
+    std::vector<Token*> tokens;
+
+    std::string::iterator it = line.begin();
+
+    for(int i = 0; it != line.end(); i++)
+    {
+        trimLeadingWhitespace(it);
+
+        if(isdigit(*it))    
+        {
+            try
+            {                
+                int val = parseInt(it);
+                tokens.push_back(new IntegerToken(val));
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+        }
+        else                
+        {
+            try
+            {
+                Operator val = parseOperator(it);
+                tokens.push_back(new OperatorToken(val));
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }    
+        }
+    }
+
+    return tokens;
+}
+
+int main(int argc, char* argv[])
+{
+    //parse();
+
+    std::string line;
+    while(std::getline(std::cin, line))
+    {
+        if(line == "exit") return 0;
+
+        std::vector<Token*> tokens = tokenize(line);
+        
+       for(auto token: tokens)  token->print();
+       std::cout << "\n";
     }
 
     return 0;
