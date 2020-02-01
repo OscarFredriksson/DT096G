@@ -2,12 +2,13 @@
 #include <fstream>
 #include <getopt.h>
 #include <string>
+#include <algorithm>
 
 enum Operator
 {
     plus,
     minus, 
-    div,
+    divi,
     mult
 };
 
@@ -18,7 +19,7 @@ Operator getOp(char c)
         case '+':   return Operator::plus;
         case '-':   return Operator::minus;
         case '*':   return Operator::mult;
-        case '/':   return Operator::div;
+        case '/':   return Operator::divi;
         default:    throw std::runtime_error("Error: Undefined operator");
     }
 }
@@ -29,7 +30,7 @@ int calc(int first, int second, Operator op)
     {
         case Operator::plus:    return first + second;
         case Operator::minus:   return first - second;
-        case Operator::div:     return first / second;
+        case Operator::divi:     return first / second;
         case Operator::mult:    return first * second;
     }
 }
@@ -39,8 +40,15 @@ int charToInt(char c)
     return c - '0';
 }
 
+void trimLeadingWhitespace(std::string::iterator& it)
+{
+    while(isspace(*it)) it++;
+}
+
 int parseInt(std::string::iterator& it)
 {
+    trimLeadingWhitespace(it);
+
     if(isdigit(*it)) 
     {
         std::string leftStr = "";
@@ -56,49 +64,52 @@ int main(int argc, char* argv[])
 {
     std::string line;
 
-    while(std::cin >> line)
+    while(std::getline(std::cin, line))
     {
         if(line == "exit") return 0;
 
+        std::string::iterator it = line.begin();
+        int sum;
         Operator op;
 
-        std::string::iterator it = line.begin();
-
-        int sum;
-        
-        try
+        for(int i = 0; it != line.end(); i++)
         {
-            sum = parseInt(it);
+            if(i % 2 == 0)
+            {
+                try
+                {
+                    if(i == 0)  sum = parseInt(it);
+                    else        
+                    {
+                        int val = parseInt(it); 
+                        sum = calc(sum, val, op);
+                    }
+                    
+                }
+                catch(const std::exception& e)
+                {
+                    std::cerr << e.what() << '\n';
+                    goto readline;
+                }
+            }
+            else
+            {
+                try
+                {
+                    trimLeadingWhitespace(it);
+                    op = getOp(*it);
+                    it++;
+                }
+                catch(const std::exception& e)
+                {
+                    std::cerr << e.what() << '\n';
+                    goto readline;
+                }
+            } 
         }
-        catch(const std::exception& e)
-        {
-            std::cerr << e.what() << '\n';
-            continue;
-        }
-
-        try
-        {
-            op = getOp(*it);
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << e.what() << '\n';
-        }
-
-        it++;
-
-        try
-        {
-            int val = parseInt(it); 
-            sum = calc(sum, val, op);
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << e.what() << '\n';
-            continue;
-        }  
 
         std::cout << sum << "\n";
+        readline:;
     }
 
     return 0;
