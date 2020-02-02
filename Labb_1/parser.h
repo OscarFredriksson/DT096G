@@ -16,8 +16,6 @@ std::vector<Token> tokenize()
 {
     std::vector<Token> tokens;
 
-    std::cout << str << "\n";
-
     while(it != str.end())
     {
         Token token = Token(getTokenType());
