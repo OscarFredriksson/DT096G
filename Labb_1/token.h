@@ -2,6 +2,7 @@
 #define TOKEN_H
 
 #include <string>
+#include <iostream>
 
 enum TokenType
 {
@@ -44,6 +45,8 @@ public:
             case TokenType::RIGHT_CURLY_BRACKET:    std::cout << "}";
                                                     break;
             case TokenType::DOT:                    std::cout << ".";
+                                                    break;
+            case TokenType::IGNORE_CAPS:            std::cout << "\\I";
                                                     break;
             default:                                break;
         }
