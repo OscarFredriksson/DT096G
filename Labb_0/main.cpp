@@ -5,21 +5,38 @@
 #include <algorithm>
 #include <vector>
 
-#include "tokens.h"
+//#include "tokens.h"
 
-Operator getOp(char c)
+enum TokenType
+{
+    Integer,
+    Plus,
+    Minus
+};
+
+struct Token
+{
+    Token(TokenType type):
+        type(type)
+    {}
+
+    TokenType type;
+    int value;
+};
+
+TokenType getOp(char c)
 {
     switch(c)
     {
-        case '+':   return Operator::Plus;
-        case '-':   return Operator::Minus;
-        case '*':   return Operator::Mult;
-        case '/':   return Operator::Div;
+        case '+':   return TokenType::Plus;
+        case '-':   return TokenType::Minus;
+        //case '*':   return Operator::Mult;
+        //case '/':   return Operator::Div;
         default:    throw std::runtime_error("Error: Undefined operator");
     }
 }
 
-int calc(int first, int second, Operator op)
+/*int calc(int first, int second, Operator op)
 {
     switch(op)
     {
@@ -28,7 +45,7 @@ int calc(int first, int second, Operator op)
         case Operator::Div:     return first / second;
         case Operator::Mult:    return first * second;
     }
-}
+}*/
 
 int charToInt(char c)
 {
@@ -55,15 +72,15 @@ int parseInt(std::string::iterator& it)
     else throw std::runtime_error("Error: Found unexpected non-integer.\n");       
 }
 
-Operator parseOperator(std::string::iterator& it)
+TokenType parseOperator(std::string::iterator& it)
 {
     trimLeadingWhitespace(it);
-    Operator op = getOp(*it);
+    TokenType op = getOp(*it);
     it++;
     return op;
 }
 
-void old_parse()
+/*void old_parse()
 {
     std::string line;
 
@@ -111,11 +128,12 @@ void old_parse()
         std::cout << sum << "\n";
         readline:;
     }
-}
+}*/
 
-std::vector<Token*> tokenize(std::string line)
+
+std::vector<Token> tokenize(std::string line)
 {
-    std::vector<Token*> tokens;
+    std::vector<Token> tokens;
 
     std::string::iterator it = line.begin();
 
@@ -128,7 +146,9 @@ std::vector<Token*> tokenize(std::string line)
             try
             {                
                 int val = parseInt(it);
-                tokens.push_back(new IntegerToken(val));
+                Token token(TokenType::Integer);
+                token.value = val;
+                tokens.push_back(token);
             }
             catch(const std::exception& e)
             {
@@ -139,8 +159,9 @@ std::vector<Token*> tokenize(std::string line)
         {
             try
             {
-                Operator val = parseOperator(it);
-                tokens.push_back(new OperatorToken(val));
+                TokenType type = parseOperator(it);
+
+                tokens.push_back(Token(type));
             }
             catch(const std::exception& e)
             {
@@ -152,6 +173,57 @@ std::vector<Token*> tokenize(std::string line)
     return tokens;
 }
 
+struct Node
+{
+    virtual int eval() = 0;
+};
+
+struct IntNode: public Node
+{
+    IntNode(int value):
+        value(value)
+    {}
+
+    int eval() override
+    {
+        return value;
+    }
+
+    int value;
+};
+
+struct AddNode: public Node
+{
+    IntNode* leftChild;
+    IntNode* rightChild;
+
+    int eval() override
+    { 
+        return leftChild->eval() + rightChild->eval(); 
+    }
+};
+
+Node* buildTree(const std::vector<Token>& tokens)
+{
+    auto it = tokens.begin();
+
+    int int1 = it->value;
+    it++;
+
+    if(it->type != TokenType::Plus) return nullptr;
+
+    AddNode* op = new AddNode();
+    it++;
+
+    int int2 = it->value;
+    it++;
+
+    op->leftChild = new IntNode(int1);
+    op->rightChild = new IntNode(int2);
+
+    return op;
+}
+
 int main(int argc, char* argv[])
 {
     //parse();
@@ -161,10 +233,11 @@ int main(int argc, char* argv[])
     {
         if(line == "exit") return 0;
 
-        std::vector<Token*> tokens = tokenize(line);
-        
-       for(auto token: tokens)  token->print();
-       std::cout << "\n";
+        std::vector<Token> tokens = tokenize(line);
+
+        Node* root = buildTree(tokens);
+
+       std::cout << root->eval() << "\n";
     }
 
     return 0;
