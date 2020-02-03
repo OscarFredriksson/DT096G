@@ -4,6 +4,8 @@
 !*/
 !makefile
 
-*.exe
 .DS_Store
 .vscode/
+
+*.exe
+*.rtf
