@@ -5,13 +5,11 @@
 #include <algorithm>
 #include <vector>
 
-//#include "tokens.h"
-
 enum TokenType
 {
-    Integer,
     Plus,
-    Minus
+    Minus,
+    Integer
 };
 
 struct Token
@@ -24,15 +22,53 @@ struct Token
     int value;
 };
 
-TokenType getOp(char c)
+
+struct Node
 {
+    virtual int eval() = 0;
+};
+
+struct IntNode: public Node
+{
+    IntNode(int value):
+        value(value)
+    {}
+
+    int eval() override
+    {
+        return value;
+    }
+
+    int value;
+};
+
+struct OpNode: public Node
+{
+    Node* leftChild;
+    Node* rightChild;
+
+    TokenType type;
+
+    OpNode(TokenType type):
+        type(type)
+    {}
+
+    int eval() override
+    { 
+        if(type == Plus)    return leftChild->eval() + rightChild->eval();
+        else                return leftChild->eval() - rightChild->eval();
+    }
+};
+
+TokenType getTokenType(char c)
+{
+    if(isdigit(c)) return Integer;
+
     switch(c)
     {
-        case '+':   return TokenType::Plus;
-        case '-':   return TokenType::Minus;
-        //case '*':   return Operator::Mult;
-        //case '/':   return Operator::Div;
-        default:    throw std::runtime_error("Error: Undefined operator");
+        case '+':           return TokenType::Plus;
+        case '-':           return TokenType::Minus;
+        default:            throw std::runtime_error("Error: Undefined operator");
     }
 }
 
@@ -59,160 +95,49 @@ void trimLeadingWhitespace(std::string::iterator& it)
 
 int parseInt(std::string::iterator& it)
 {
-    trimLeadingWhitespace(it);
+    std::string leftStr = "";
+    
+    for(; isdigit(*it); it++) leftStr.push_back(*it);
 
-    if(isdigit(*it)) 
-    {
-        std::string leftStr = "";
-        
-        for(; isdigit(*it); it++) leftStr.push_back(*it);
-
-        return std::stoi(leftStr);
-    }
-    else throw std::runtime_error("Error: Found unexpected non-integer.\n");       
+    return std::stoi(leftStr);
 }
-
-TokenType parseOperator(std::string::iterator& it)
-{
-    trimLeadingWhitespace(it);
-    TokenType op = getOp(*it);
-    it++;
-    return op;
-}
-
-/*void old_parse()
-{
-    std::string line;
-
-    while(std::getline(std::cin, line))
-    {
-        if(line == "exit") return;
-
-        std::string::iterator it = line.begin();
-        int sum;
-        Operator op;
-
-        for(int i = 0; it != line.end(); i++)
-        {
-            if(i % 2 == 0)
-            {
-                try
-                {
-                    if(i == 0)  sum = parseInt(it);
-                    else        
-                    {
-                        int val = parseInt(it); 
-                        sum = calc(sum, val, op);
-                    }  
-                }
-                catch(const std::exception& e)
-                {
-                    std::cerr << e.what() << '\n';
-                    goto readline;
-                }
-            }
-            else
-            {
-                try
-                {
-                    op = parseOperator(it);
-                }
-                catch(const std::exception& e)
-                {
-                    std::cerr << e.what() << '\n';
-                    goto readline;
-                }
-            } 
-        }
-
-        std::cout << sum << "\n";
-        readline:;
-    }
-}*/
-
 
 std::vector<Token> tokenize(std::string line)
 {
     std::vector<Token> tokens;
 
     std::string::iterator it = line.begin();
+    trimLeadingWhitespace(it);
 
-    for(int i = 0; it != line.end(); i++)
+    while(it != line.end())
     {
+        TokenType type = getTokenType(*it);
+        Token token(type);
+        if(type == Integer)
+        {
+            int val = parseInt(it);
+            token.value = val;
+        }
+        else it++;
+
         trimLeadingWhitespace(it);
 
-        if(isdigit(*it))    
-        {
-            try
-            {                
-                int val = parseInt(it);
-                Token token(TokenType::Integer);
-                token.value = val;
-                tokens.push_back(token);
-            }
-            catch(const std::exception& e)
-            {
-                std::cerr << e.what() << '\n';
-            }
-        }
-        else                
-        {
-            try
-            {
-                TokenType type = parseOperator(it);
-
-                tokens.push_back(Token(type));
-            }
-            catch(const std::exception& e)
-            {
-                std::cerr << e.what() << '\n';
-            }    
-        }
+        tokens.push_back(token);
     }
 
     return tokens;
 }
 
-struct Node
-{
-    virtual int eval() = 0;
-};
-
-struct IntNode: public Node
-{
-    IntNode(int value):
-        value(value)
-    {}
-
-    int eval() override
-    {
-        return value;
-    }
-
-    int value;
-};
-
-struct AddNode: public Node
-{
-    IntNode* leftChild;
-    IntNode* rightChild;
-
-    int eval() override
-    { 
-        return leftChild->eval() + rightChild->eval(); 
-    }
-};
-
-Node* buildTree(const std::vector<Token>& tokens)
+/*Node* buildTree(const std::vector<Token>& tokens)
 {
     auto it = tokens.begin();
 
     int int1 = it->value;
     it++;
 
-    if(it->type != TokenType::Plus) return nullptr;
+    if(it->type != TokenType::Plus && it->type != TokenType::Minus) return nullptr;
 
-    AddNode* op = new AddNode();
+    OpNode* op = new OpNode(it->type);
     it++;
 
     int int2 = it->value;
@@ -222,12 +147,44 @@ Node* buildTree(const std::vector<Token>& tokens)
     op->rightChild = new IntNode(int2);
 
     return op;
+}*/
+
+Node* buildTree(const std::vector<Token>& tokens)
+{
+    auto token_it = tokens.begin();
+    
+    OpNode* root = nullptr;
+    OpNode* prev_op = nullptr;
+
+    while(token_it != tokens.end())
+    {
+        auto op_it = std::find_if(token_it, tokens.end(), [](const Token& token)
+        {
+            return token.type == Plus || token.type == Minus;
+        });
+
+        if(op_it == std::end(tokens)) 
+        {
+            prev_op->rightChild = new IntNode(token_it->value);
+            break;
+        }
+
+        OpNode* op = new OpNode(op_it->type);
+
+        if(root == nullptr) root = op;
+        else                prev_op->rightChild = op;
+
+        op->leftChild = new IntNode(token_it->value);
+        prev_op = op;
+
+        token_it = std::next(op_it);
+    }
+
+    return root;
 }
 
 int main(int argc, char* argv[])
 {
-    //parse();
-
     std::string line;
     while(std::getline(std::cin, line))
     {
@@ -237,7 +194,9 @@ int main(int argc, char* argv[])
 
         Node* root = buildTree(tokens);
 
-       std::cout << root->eval() << "\n";
+        //std::cout << "tree built\n";
+
+        std::cout << root->eval() << "\n";
     }
 
     return 0;
