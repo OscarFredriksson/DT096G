@@ -72,17 +72,6 @@ TokenType getTokenType(char c)
     }
 }
 
-/*int calc(int first, int second, Operator op)
-{
-    switch(op)
-    {
-        case Operator::Plus:    return first + second;
-        case Operator::Minus:   return first - second;
-        case Operator::Div:     return first / second;
-        case Operator::Mult:    return first * second;
-    }
-}*/
-
 int charToInt(char c)
 {
     return c - '0';
@@ -107,6 +96,7 @@ std::vector<Token> tokenize(std::string line)
     std::vector<Token> tokens;
 
     std::string::iterator it = line.begin();
+    
     trimLeadingWhitespace(it);
 
     while(it != line.end())
@@ -127,27 +117,6 @@ std::vector<Token> tokenize(std::string line)
 
     return tokens;
 }
-
-/*Node* buildTree(const std::vector<Token>& tokens)
-{
-    auto it = tokens.begin();
-
-    int int1 = it->value;
-    it++;
-
-    if(it->type != TokenType::Plus && it->type != TokenType::Minus) return nullptr;
-
-    OpNode* op = new OpNode(it->type);
-    it++;
-
-    int int2 = it->value;
-    it++;
-
-    op->leftChild = new IntNode(int1);
-    op->rightChild = new IntNode(int2);
-
-    return op;
-}*/
 
 Node* buildTree(const std::vector<Token>& tokens)
 {
@@ -171,8 +140,8 @@ Node* buildTree(const std::vector<Token>& tokens)
 
         OpNode* op = new OpNode(op_it->type);
 
-        if(root == nullptr) root = op;
-        else                prev_op->rightChild = op;
+        if(!root)   root = op;
+        else        prev_op->rightChild = op;
 
         op->leftChild = new IntNode(token_it->value);
         prev_op = op;
@@ -193,8 +162,6 @@ int main(int argc, char* argv[])
         std::vector<Token> tokens = tokenize(line);
 
         Node* root = buildTree(tokens);
-
-        //std::cout << "tree built\n";
 
         std::cout << root->eval() << "\n";
     }
