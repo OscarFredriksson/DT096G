@@ -18,7 +18,7 @@ private:
     
     std::string parseStr();
 
-    std::string parseCounter();
+    std::string parseBraces();
 
     TokenType getTokenType();
 

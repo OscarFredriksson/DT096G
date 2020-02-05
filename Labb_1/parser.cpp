@@ -18,17 +18,13 @@ std::vector<Token> Parser::tokenize()
         
         switch(token.type)
         {
-            case TokenType::STRING:     token.str = parseStr();
-                                        break;
-            case TokenType::COUNTER:    token.str = parseCounter();   
-                                        break; 
-            default:                    it++;
-                                        break;
+            case TokenType::STRING:         token.val = parseStr();
+                                            break;
+            case TokenType::OUTPUT_GROUP:   it++;
+            case TokenType::COUNTER:        token.val = parseBraces();   
+                                            break; 
+            default:                        it++;
         }
-
-        /*if(token.type == TokenType::STRING) token.str = parseStr();        
-        else if(token.type ==)
-        else                                it++;*/
         
         tokens.push_back(token);
     }
@@ -50,8 +46,10 @@ std::string Parser::parseStr()
     return str; 
 }
 
-std::string Parser::parseCounter()
+std::string Parser::parseBraces()
 {
+    if(*it != '{')  throw std::runtime_error("ERROR: Expected { sign.");
+
     if(!std::isdigit(*++it)) throw std::runtime_error("ERROR: Found non integer as counter value");
 
     std::string value(1, *it++);
@@ -75,8 +73,13 @@ TokenType Parser::getTokenType()
         case ')':   return TokenType::RIGHT_PAREN;
         case '.':   return TokenType::DOT; 
         case '{':   return TokenType::COUNTER;
-        case '\\':  if(*++it == 'I') return TokenType::IGNORE_CAPS;
-        default: throw std::runtime_error("Error: Unknown identifier");
+        case '\\':  
+        {
+            token_c = *++it;
+            if(token_c == 'I') return TokenType::IGNORE_CAPS;
+            if(token_c == 'O') return TokenType::OUTPUT_GROUP;
+        }
 
+        default: throw std::runtime_error("Error: Unknown identifier");
     }
 }

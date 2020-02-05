@@ -13,14 +13,15 @@ enum TokenType
     RIGHT_PAREN,
     COUNTER,
     DOT,
-    IGNORE_CAPS
+    IGNORE_CAPS,
+    OUTPUT_GROUP
 };
 
 class Token
 {
 public:
-    Token(TokenType type, std::string str = ""):
-        type(type), str(str)
+    Token(TokenType type, std::string val = ""):
+        type(type), val(val)
     {};
 
     void print()
@@ -29,7 +30,7 @@ public:
 
         switch(type)
         {
-            case TokenType::STRING:                 std::cout << str;
+            case TokenType::STRING:                 std::cout << val;
                                                     break;
             case TokenType::OR:                     std::cout << "+";
                                                     break;
@@ -39,18 +40,19 @@ public:
                                                     break;
             case TokenType::RIGHT_PAREN:            std::cout << ")";
                                                     break;
-            case TokenType::COUNTER:                std::cout << "{" + str + "}";
+            case TokenType::COUNTER:                std::cout << "{" + val + "}";
                                                     break;
             case TokenType::DOT:                    std::cout << ".";
                                                     break;
             case TokenType::IGNORE_CAPS:            std::cout << "\\I";
                                                     break;
+            case TokenType::OUTPUT_GROUP:           std::cout << "\\O{" + val + "}";
             default:                                break;
         }
     }
 
     TokenType type;
-    std::string str; 
+    std::string val; 
 };
 
 #endif
