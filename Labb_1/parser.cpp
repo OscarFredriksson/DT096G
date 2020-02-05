@@ -16,8 +16,19 @@ std::vector<Token> Parser::tokenize()
     {
         Token token = Token(getTokenType());
         
-        if(token.type == TokenType::STRING) token.str = parseStr();        
-        else                                it++;
+        switch(token.type)
+        {
+            case TokenType::STRING:     token.str = parseStr();
+                                        break;
+            case TokenType::COUNTER:    token.str = parseCounter();   
+                                        break; 
+            default:                    it++;
+                                        break;
+        }
+
+        /*if(token.type == TokenType::STRING) token.str = parseStr();        
+        else if(token.type ==)
+        else                                it++;*/
         
         tokens.push_back(token);
     }
@@ -32,35 +43,40 @@ bool Parser::isIdentifier(char c)
 
 std::string Parser::parseStr()
 {
-    if(isIdentifier(*it)) 
-    {
-        std::string str = "";
-        
-        for(; isIdentifier(*it); it++) str.push_back(*it);
+    std::string str = "";
+    
+    while(isIdentifier(*it)) str.push_back(*it++);
 
-        return str;
-    }
-    else throw std::runtime_error("Error: Found unexpected identifier.\n");       
+    return str; 
+}
+
+std::string Parser::parseCounter()
+{
+    if(!std::isdigit(*++it)) throw std::runtime_error("ERROR: Found non integer as counter value");
+
+    std::string value(1, *it++);
+
+    if(!*it++ == '}') throw std::runtime_error("ERROR: Found no closing counter brace");
+
+    return value;
 }
 
 TokenType Parser::getTokenType()
 {
-    if(isIdentifier(*it))  return TokenType::STRING;
+    char token_c = *it;
 
-    switch(*it)
+    if(isIdentifier(token_c))  return TokenType::STRING;
+
+    switch(token_c)
     {
         case '+':   return TokenType::OR;
         case '*':   return TokenType::ANY;
         case '(':   return TokenType::LEFT_PAREN;
         case ')':   return TokenType::RIGHT_PAREN;
-        case '{':   return TokenType::LEFT_CURLY_BRACKET;
-        case '}':   return TokenType::RIGHT_CURLY_BRACKET;
         case '.':   return TokenType::DOT; 
-        case '\\':  
-        {
-            it++;
-            if(*it == 'I') return TokenType::IGNORE_CAPS;
-        }
-        default:    throw std::runtime_error("ERROR: Unknown identifier");
+        case '{':   return TokenType::COUNTER;
+        case '\\':  if(*++it == 'I') return TokenType::IGNORE_CAPS;
+        default: throw std::runtime_error("Error: Unknown identifier");
+
     }
 }

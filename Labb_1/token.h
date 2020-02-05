@@ -11,8 +11,7 @@ enum TokenType
     ANY,
     LEFT_PAREN,
     RIGHT_PAREN,
-    LEFT_CURLY_BRACKET,
-    RIGHT_CURLY_BRACKET,
+    COUNTER,
     DOT,
     IGNORE_CAPS
 };
@@ -40,9 +39,7 @@ public:
                                                     break;
             case TokenType::RIGHT_PAREN:            std::cout << ")";
                                                     break;
-            case TokenType::LEFT_CURLY_BRACKET:     std::cout << "{";
-                                                    break;
-            case TokenType::RIGHT_CURLY_BRACKET:    std::cout << "}";
+            case TokenType::COUNTER:                std::cout << "{" + str + "}";
                                                     break;
             case TokenType::DOT:                    std::cout << ".";
                                                     break;

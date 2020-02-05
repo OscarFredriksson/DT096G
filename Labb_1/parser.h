@@ -18,6 +18,8 @@ private:
     
     std::string parseStr();
 
+    std::string parseCounter();
+
     TokenType getTokenType();
 
     std::string str;
