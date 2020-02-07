@@ -2,28 +2,23 @@
 #define PARSER_H
 
 #include <vector>
-
+#include "nodes.h"
 #include "token.h"
-
 
 class Parser
 {
 public:
-    Parser(std::string str);
+    /*Parser::Parser(const std::vector<Token>& tokens):
+          tokens(tokens)
+    {}*/
 
-    std::vector<Token> tokenize();
+    RegexNode* parseRegex(std::vector<Token>::const_iterator& it);
+
+    ProgramNode* buildTree(const std::vector<Token>& tokens);
 
 private:
-    bool isIdentifier(char c);
-    
-    std::string parseStr();
+    std::vector<Token> tokens;
 
-    std::string parseBraces();
-
-    TokenType getTokenType();
-
-    std::string str;
-    std::string::iterator it;
 };
 
 #endif

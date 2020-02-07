@@ -6,9 +6,9 @@
 
 enum TokenType
 {
-    STRING,
+    CHAR,
     OR,
-    ANY,
+    STAR,
     LEFT_PAREN,
     RIGHT_PAREN,
     COUNTER,
@@ -20,8 +20,8 @@ enum TokenType
 class Token
 {
 public:
-    Token(TokenType type, std::string val = ""):
-        type(type), val(val)
+    Token(TokenType type):
+        type(type)
     {};
 
     void print()
@@ -30,29 +30,29 @@ public:
 
         switch(type)
         {
-            case TokenType::STRING:                 std::cout << val;
+            case TokenType::CHAR:                   std::cout << value;
                                                     break;
             case TokenType::OR:                     std::cout << "+";
                                                     break;
-            case TokenType::ANY:                    std::cout << "*";
+            case TokenType::STAR:                   std::cout << "*";
                                                     break;
             case TokenType::LEFT_PAREN:             std::cout << "(";
                                                     break;
             case TokenType::RIGHT_PAREN:            std::cout << ")";
                                                     break;
-            case TokenType::COUNTER:                std::cout << "{" + val + "}";
+            case TokenType::COUNTER:                std::cout << "{" + std::string(1, value) + "}";
                                                     break;
             case TokenType::DOT:                    std::cout << ".";
                                                     break;
             case TokenType::IGNORE_CAPS:            std::cout << "\\I";
                                                     break;
-            case TokenType::OUTPUT_GROUP:           std::cout << "\\O{" + val + "}";
+            case TokenType::OUTPUT_GROUP:           std::cout << "\\O{" + std::string(1, value) + "}";
             default:                                break;
         }
     }
 
     TokenType type;
-    std::string val; 
+    char value; 
 };
 
 #endif

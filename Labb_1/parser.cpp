@@ -1,85 +1,73 @@
 #include "parser.h"
+#include "lexer.h"
 
-#include <stdexcept>
-
- Parser::Parser(std::string str):
-    str(str)
+RegexNode* Parser::parseRegex(std::vector<Token>::const_iterator& it)
 {
-    it = this->str.begin();
-}
+    RegexNode* regexNode = new RegexNode();
 
-std::vector<Token> Parser::tokenize()
-{
-    std::vector<Token> tokens;
+    Node* prevNode = regexNode;
 
-    while(it != str.end())
+    for(;Lexer::isIdentifier(it->value);it++)
     {
-        Token token = Token(getTokenType());
-        
-        switch(token.type)
-        {
-            case TokenType::STRING:         token.val = parseStr();
-                                            break;
-            case TokenType::OUTPUT_GROUP:   it++;
-            case TokenType::COUNTER:        token.val = parseBraces();   
-                                            break; 
-            default:                        it++;
-        }
-        
-        tokens.push_back(token);
+        CharNode* charNode = new CharNode(it->value);
+
+        prevNode->addChild(charNode);
+
+        prevNode = charNode;
     }
 
-    return tokens;
+    return regexNode;
 }
 
-bool Parser::isIdentifier(char c)
+ProgramNode* Parser::buildTree(const std::vector<Token>& tokens)
 {
-    return isalpha(c) || isdigit(c) || c == ' ';
-}
-
-std::string Parser::parseStr()
-{
-    std::string str = "";
+    std::vector<Token>::const_iterator token_it = tokens.begin();
     
-    while(isIdentifier(*it)) str.push_back(*it++);
+    ProgramNode* root = new ProgramNode();
 
-    return str; 
-}
+    Node* prev_node = root;
 
-std::string Parser::parseBraces()
-{
-    if(*it != '{')  throw std::runtime_error("ERROR: Expected { sign.");
-
-    if(!std::isdigit(*++it)) throw std::runtime_error("ERROR: Found non integer as counter value");
-
-    std::string value(1, *it++);
-
-    if(!*it++ == '}') throw std::runtime_error("ERROR: Found no closing counter brace");
-
-    return value;
-}
-
-TokenType Parser::getTokenType()
-{
-    char token_c = *it;
-
-    if(isIdentifier(token_c))  return TokenType::STRING;
-
-    switch(token_c)
+    while(token_it != tokens.end())
     {
-        case '+':   return TokenType::OR;
-        case '*':   return TokenType::ANY;
-        case '(':   return TokenType::LEFT_PAREN;
-        case ')':   return TokenType::RIGHT_PAREN;
-        case '.':   return TokenType::DOT; 
-        case '{':   return TokenType::COUNTER;
-        case '\\':  
+        auto op_it = std::find_if(token_it, tokens.end(), [](const Token& token_it)
         {
-            token_c = *++it;
-            if(token_c == 'I') return TokenType::IGNORE_CAPS;
-            if(token_c == 'O') return TokenType::OUTPUT_GROUP;
+            return token_it.type == OR;
+        });
+
+        if(op_it != std::end(tokens))
+        {
+            OrNode* or_node = new OrNode();
+            
+            RegexNode* regexNode = new RegexNode();
+
+            Node* prev_node_2 = regexNode;
+
+            while(token_it != op_it)
+            {
+                CharNode* charNode = new CharNode(token_it->value);
+
+                prev_node_2->addChild(charNode);
+
+                prev_node_2 = charNode;
+
+                token_it++;
+            }
+
+            or_node->addChild(regexNode);
+
+            prev_node->addChild(or_node);
+            prev_node = or_node;
+        }
+        else    
+        {
+            RegexNode* regexNode = parseRegex(token_it);
+
+            prev_node->addChild(regexNode);
+            break;
         }
 
-        default: throw std::runtime_error("Error: Unknown identifier");
+        token_it = std::next(op_it);
     }
+
+    return root;
 }
