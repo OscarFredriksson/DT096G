@@ -1,6 +1,19 @@
-src = $(wildcard *.cpp)
+SRC = $(wildcard *.cpp)
+TARGET = main
 
-main: $(src)
-	g++ $^ -std=c++17 -o $@
-run: main
-	./main     
+FLAGS = -std=c++17 -o
+
+clean: 
+	rm -f $(TARGET)
+
+$(TARGET): $(SRC)
+	g++ $^ $(FLAGS) $@
+
+run: $(TARGET)
+	./$(TARGET)   
+
+rebuild: 
+	$(MAKE) clean 
+	$(MAKE) run
+
+
