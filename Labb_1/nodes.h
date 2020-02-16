@@ -2,6 +2,7 @@
 #define NODES_H
 
 #include "token.h"
+#include <algorithm>
 
 /*
     Prgrm:  Oändlig mängd barn
@@ -28,22 +29,50 @@
 
 */
 
+using Iterator = std::string::iterator;
+
+struct EvalResult
+{
+    EvalResult(bool result):
+        result(result)
+    {}
+
+    EvalResult(bool result, Iterator leaf_pos):
+        result(result), leaf_pos(leaf_pos)
+    {}
+
+    EvalResult& operator=(const EvalResult& rhs)
+    {
+        result = rhs.result;
+        leaf_pos = rhs.leaf_pos;
+
+        return *this;
+    }
+
+    operator bool() const
+    {
+        return result;
+    }
+    
+    bool result;
+
+    Iterator leaf_pos;
+};
+
 struct Node
 {
-    void eval(std::string::iterator str_begin, std::string::iterator str_end)
+    bool eval(Iterator str_begin, Iterator str_end)
     {
-        this->str_begin = str_begin;
-        this->str_end = str_end;
+        Iterator curr_pos = str_begin;
 
-        eval();
+        return eval(str_begin, str_end, curr_pos);
     };
 
-    virtual bool eval()
+    virtual EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos)
     {
-        for(auto c: children)
-        {
-            c->eval();
-        }
+        std::cout << "DENNA SKA EJ KÖRAS\n";
+
+        return false; 
     }
 
     virtual void print()
@@ -68,9 +97,6 @@ struct Node
     }
 
     std::vector<Node*> children;
-
-    std::string::iterator str_begin;
-    std::string::iterator str_end;
 };
 
 struct ProgramNode: public Node //Base node
@@ -81,16 +107,25 @@ struct ProgramNode: public Node //Base node
         Node::print();
     }
 
-    void eval() override
+    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
     {
-        //std::for_each(children.begin(), children.end(), eval);
+        if(children.size() == 0) return false;
+
+        return children[0]->eval(str_begin, str_end, curr_pos);
     }
 };
 
 struct RegexNode: public Node
 {
-    void eval() override
-    {}
+    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    {
+        if(str_begin >= str_end && children.size() == 0) return false;
+
+        EvalResult childEval = children[0]->eval(str_begin, str_end, curr_pos);
+
+        if(childEval)   return true; 
+        else            return eval(std::next(childEval.leaf_pos), str_end, curr_pos);
+    }
 
     void print() override
     {
@@ -105,8 +140,29 @@ struct CharNode: public Node
         value(value)
     {}
 
-    void eval() override
-    {}
+    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    {
+        if(str_begin >= str_end) return false;
+
+        if(children.size() != 0)
+        {
+            EvalResult childEval = children[0]->eval(str_begin, str_end, curr_pos);
+            
+            if(!childEval)  return EvalResult(false, childEval.leaf_pos);
+            else            return EvalResult(*--curr_pos == value, childEval.leaf_pos);
+        }
+        else
+        {
+            //std::cout << *str_begin << "\n";
+
+            curr_pos = std::find_if(str_begin, str_end, [&](const char it)
+            {
+                return it == value;
+            });
+
+            return EvalResult(curr_pos != str_end, curr_pos);
+        }
+    }
 
     void print() override
     {
@@ -124,8 +180,10 @@ struct ParenNode: public Node
         std::cout << "()\n";
     }
 
-    void eval() override
-    {}
+    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    {
+        return false;
+    }
 };
 
 struct OrNode: public Node
@@ -136,8 +194,17 @@ struct OrNode: public Node
         Node::print();
     }
 
-    void eval() override
-    {}
+    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    {
+        if(children.size() != 2) 
+        {
+            std::cerr << "Too few arguments for or operator\n";
+            return false;
+        }
+
+        if(children[0]->eval(str_begin, str_end, curr_pos)) return true;
+        else                                                return children[1]->eval(str_begin, str_end, curr_pos);
+    }
 };
 
 struct StarNode: public Node
@@ -147,8 +214,10 @@ struct StarNode: public Node
         std::cout << "*\n";
     }
 
-    void eval() override
-    {}
+    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    {
+        return false;
+    }
 };
 
 struct DotNode: public Node
@@ -158,8 +227,10 @@ struct DotNode: public Node
         std::cout << ".\n";
     }
 
-    void eval() override
-    {}
+    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    {
+        return false;
+    }
 };
 
 #endif
