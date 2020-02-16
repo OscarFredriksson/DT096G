@@ -7,7 +7,7 @@ RegexNode* Parser::parseRegex(std::vector<Token>::const_iterator& it)
 
     Node* prevNode = regexNode;
 
-    for(;Lexer::isIdentifier(it->value);it++)
+    for(;Lexer::isIdentifier(it->value); it++)
     {
         CharNode* charNode = new CharNode(it->value);
 
@@ -29,6 +29,52 @@ ProgramNode* Parser::buildTree(const std::vector<Token>& tokens)
 
     while(token_it != tokens.end())
     {
+        /*auto start_paren_it = std::find_if(token_it, tokens.end(), [](const Token& token_it)
+        {
+            return token_it.type == LEFT_PAREN;
+        });
+
+        if(start_paren_it == tokens.end())
+        {
+            //parsePlus();
+        }*/
+        
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         auto op_it = std::find_if(token_it, tokens.end(), [](const Token& token_it)
         {
             return token_it.type == OR;

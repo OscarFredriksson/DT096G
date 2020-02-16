@@ -45,7 +45,7 @@ char Lexer::parseBraces()
 
     char value = *it++;
 
-    if(!*it++ == '}') throw std::runtime_error("ERROR: Found no closing counter brace");
+    if(*it++ != '}') throw std::runtime_error("ERROR: Found no closing counter brace");
 
     return value;
 }
