@@ -6,13 +6,15 @@
 #include "nodes.h"
 #include "token.h"
 
+using Iter = std::vector<Token>::iterator;
+
 namespace Parser
 {
-    RegexNode* parseRegex(std::vector<Token>::const_iterator& it);
+    RegexNode* parseRegex(Iter& it);
 
-    ProgramNode* buildTree(const std::vector<Token>& tokens);
+    ProgramNode* buildTree(std::vector<Token> tokens);
 
-
+    Node* parseExpression(Iter begin, Iter end);
 }
 
 #endif

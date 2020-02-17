@@ -34,7 +34,7 @@ std::vector<Token> Lexer::tokenize()
 
 bool Lexer::isIdentifier(char c)
 {
-    return isalpha(c) || isdigit(c) || c == ' ';
+    return  (isalpha(c) || isdigit(c) || c == ' ');
 }
 
 char Lexer::parseBraces()
