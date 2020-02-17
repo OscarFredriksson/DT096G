@@ -119,7 +119,7 @@ struct RegexNode: public Node
 {
     EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
     {
-        if(str_begin >= str_end && children.size() == 0) return false;
+        if(str_begin >= str_end || children.size() == 0) return false;
 
         EvalResult childEval = children[0]->eval(str_begin, str_end, curr_pos);
 
@@ -153,8 +153,6 @@ struct CharNode: public Node
         }
         else
         {
-            //std::cout << *str_begin << "\n";
-
             curr_pos = std::find_if(str_begin, str_end, [&](const char it)
             {
                 return it == value;
@@ -178,6 +176,7 @@ struct ParenNode: public Node
     void print() override
     {
         std::cout << "()\n";
+        Node::print();
     }
 
     EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override

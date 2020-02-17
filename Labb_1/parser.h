@@ -10,7 +10,7 @@ using Iter = std::vector<Token>::iterator;
 
 namespace Parser
 {
-    RegexNode* parseRegex(Iter& it);
+    RegexNode* parseRegex(Iter& it, Iter end);
 
     ProgramNode* buildTree(std::vector<Token> tokens);
 

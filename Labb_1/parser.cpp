@@ -25,29 +25,39 @@ ProgramNode* Parser::buildTree(std::vector<Token> tokens)
 
         prev_node->addChild(temp);
     }
+    else if(end_paren_it == tokens.end())
+    {
+        std::cerr << "Found no closing parentheses\n";
+    }
     else
     {
-        ParenNode* parenNode = new ParenNode();
+        Node* parenNode = new ParenNode();
 
         prev_node->addChild(parenNode);
 
         prev_node = parenNode;
 
-        Node* temp = parseExpression(++start_paren_it, end_paren_it);
+        parenNode->addChild(parseExpression(token_it, start_paren_it));
 
-        
+        Node* innerExp = parseExpression(std::next(start_paren_it), end_paren_it);
+
+        parenNode->addChild(innerExp);
+
+        parenNode->addChild(parseExpression(std::next(end_paren_it), tokens.end()));
+
+        prev_node = parenNode;
     }
 
     return root;
 }
 
-RegexNode* Parser::parseRegex(Iter& it)
+RegexNode* Parser::parseRegex(Iter& it, Iter end)
 {
     RegexNode* regexNode = new RegexNode();
 
     Node* prevNode = regexNode;
 
-    for(;Lexer::isIdentifier(it->value); it++)
+    for(;Lexer::isIdentifier(it->value) && it != end; it++)
     {
         CharNode* charNode = new CharNode(it->value);
 
@@ -63,9 +73,8 @@ Node* Parser::parseExpression(Iter begin, Iter end)
 {
     Iter token_it = begin;
 
-    RegexNode* root = new RegexNode();
-
-    Node* prev_node = root;
+    Node* root = nullptr;
+    Node* prev_node;
 
     while(token_it != end)
     {
@@ -77,37 +86,25 @@ Node* Parser::parseExpression(Iter begin, Iter end)
         if(op_it != end)
         {
             OrNode* or_node = new OrNode();
-                        
-            RegexNode* regexNode = new RegexNode();
 
-            Node* prev_node_2 = regexNode;
+            or_node->addChild(parseRegex(token_it, op_it));
 
-            while(token_it != op_it)
-            {
-                CharNode* charNode = new CharNode(token_it->value);
-
-                prev_node_2->addChild(charNode);
-
-                prev_node_2 = charNode;
-
-                token_it++;
-            }
-
-            or_node->addChild(regexNode);
-
-            prev_node->addChild(or_node);
+            if(!root)   root = or_node;
+            else        prev_node->addChild(or_node);
+            
             prev_node = or_node;
+
+            token_it = std::next(op_it);
         }
         else    
         {
-            RegexNode* regexNode = parseRegex(token_it);
+            RegexNode* regexNode = parseRegex(token_it, end);
 
-            prev_node->addChild(regexNode);
-            break;
+            if(!root)   root = regexNode;
+            else        prev_node->addChild(regexNode); 
+
+            prev_node = regexNode;
         }
-
-        token_it = std::next(op_it);
-
     }
 
     return root;
