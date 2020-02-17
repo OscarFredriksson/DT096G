@@ -9,33 +9,75 @@ ProgramNode* Parser::buildTree(std::vector<Token> tokens)
 
     Node* prev_node = root;
 
-    while(token_it != tokens.end())
+    auto start_paren_it = std::find_if(token_it, tokens.end(), [](const Token& token_it)
     {
-        auto start_paren_it = std::find_if(token_it, tokens.end(), [](const Token& token_it)
-        {
-            return token_it.type == LEFT_PAREN;
-        });
+        return token_it.type == LEFT_PAREN;
+    });
 
-        if(start_paren_it == tokens.end())
-        {
-            Node* temp = parseExpression(tokens.begin(), tokens.end());
+    auto end_paren_it = std::find_if(token_it, tokens.end(), [](const Token& token_it)
+    {
+        return token_it.type == RIGHT_PAREN;
+    });
 
-            prev_node->addChild(temp);
+    if(start_paren_it == tokens.end())
+    {
+        Node* temp = parseExpression(tokens.begin(), tokens.end());
 
-            prev_node = temp;
-        }
+        prev_node->addChild(temp);
+    }
+    else
+    {
+        ParenNode* parenNode = new ParenNode();
+
+        prev_node->addChild(parenNode);
+
+        prev_node = parenNode;
+
+        Node* temp = parseExpression(++start_paren_it, end_paren_it);
+
         
-        /*auto op_it = std::find_if(token_it, tokens.end(), [](const Token& token_it)
+    }
+
+    return root;
+}
+
+RegexNode* Parser::parseRegex(Iter& it)
+{
+    RegexNode* regexNode = new RegexNode();
+
+    Node* prevNode = regexNode;
+
+    for(;Lexer::isIdentifier(it->value); it++)
+    {
+        CharNode* charNode = new CharNode(it->value);
+
+        prevNode->addChild(charNode);
+
+        prevNode = charNode;
+    }
+
+    return regexNode;
+}
+
+Node* Parser::parseExpression(Iter begin, Iter end)
+{
+    Iter token_it = begin;
+
+    RegexNode* root = new RegexNode();
+
+    Node* prev_node = root;
+
+    while(token_it != end)
+    {
+        auto op_it = std::find_if(token_it, end, [](const Token& token_it)
         {
             return token_it.type == OR;
         });
 
-        if(op_it != std::end(tokens))
+        if(op_it != end)
         {
             OrNode* or_node = new OrNode();
-            
-            //RegexNode* regexNode = parseRegex(token_it);
-            
+                        
             RegexNode* regexNode = new RegexNode();
 
             Node* prev_node_2 = regexNode;
@@ -64,80 +106,8 @@ ProgramNode* Parser::buildTree(std::vector<Token> tokens)
             break;
         }
 
-        token_it = std::next(op_it);*/
-    }
+        token_it = std::next(op_it);
 
-    return root;
-}
-
-RegexNode* Parser::parseRegex(Iter& it)
-{
-    RegexNode* regexNode = new RegexNode();
-
-    Node* prevNode = regexNode;
-
-    for(;Lexer::isIdentifier(it->value); it++)
-    {
-        CharNode* charNode = new CharNode(it->value);
-
-        prevNode->addChild(charNode);
-
-        prevNode = charNode;
-    }
-
-    return regexNode;
-}
-
-Node* Parser::parseExpression(Iter begin, Iter end)
-{
-    RegexNode* root = new RegexNode();
-
-    Node* prev_node = root;
-
-    while(begin != end)
-    {     
-           
-        Iter op_it = std::find_if(begin, end, [](const Token& token_it)
-        {
-            return token_it.type == OR;
-        });
-
-        if(op_it != end)
-        {
-            OrNode* or_node = new OrNode();
-                        
-            RegexNode* regexNode = new RegexNode();
-
-            Node* prev_node_2 = regexNode;
-
-            while(begin != op_it)
-            {
-                CharNode* charNode = new CharNode(begin->value);
-
-                prev_node_2->addChild(charNode);
-
-                prev_node_2 = charNode;
-
-                begin++;
-            }
-
-            or_node->addChild(regexNode);
-
-            prev_node->addChild(or_node);
-            prev_node = or_node;
-        }
-        else    
-        {
-            RegexNode* regexNode = parseRegex(begin);
-
-            prev_node->addChild(regexNode);
-            break;
-        }
-
-        begin = std::next(op_it);
-
-        begin->print();
-        std::cout << "\n";
     }
 
     return root;

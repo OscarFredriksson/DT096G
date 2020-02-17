@@ -184,6 +184,8 @@ struct ParenNode: public Node
     {
         return false;
     }
+
+    bool ignoreCaps = false;
 };
 
 struct OrNode: public Node
