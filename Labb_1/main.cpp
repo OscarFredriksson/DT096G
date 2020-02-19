@@ -25,7 +25,7 @@ int main()
         for(auto token: tokens)  token.print();
         std::cout << "\n\n";
 
-        ProgramNode* root = Parser::buildTree(tokens);
+        Node* root = Parser::buildTree(tokens);
 
         root->print();
 

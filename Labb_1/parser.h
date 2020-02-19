@@ -10,11 +10,15 @@ using Iter = std::vector<Token>::iterator;
 
 namespace Parser
 {
-    RegexNode* parseRegex(Iter& it, Iter end);
+    StrNode* parseStr(Iter& it, Iter end);
 
-    ProgramNode* buildTree(std::vector<Token> tokens);
+    OrNode* parseOr(StrNode* leftChild, Iter& it, Iter end);
 
-    Node* parseExpression(Iter begin, Iter end);
+    ExprNode* buildTree(std::vector<Token> tokens);
+
+    Node* parseExpr(Iter& it, Iter end);
+
+    ParenNode* parseParen(Iter& it, Iter end);
 }
 
 #endif

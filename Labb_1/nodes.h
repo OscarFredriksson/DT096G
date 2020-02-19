@@ -29,6 +29,8 @@
 
 */
 
+
+
 using Iterator = std::string::iterator;
 
 struct EvalResult
@@ -54,6 +56,11 @@ struct EvalResult
         return result;
     }
     
+    std::vector<std::string> found_groups;
+
+    Iterator first_found;
+    Iterator last_found;
+
     bool result;
 
     Iterator leaf_pos;
@@ -65,7 +72,12 @@ struct Node
     {
         Iterator curr_pos = str_begin;
 
-        return eval(str_begin, str_end, curr_pos);
+        for(; curr_pos != str_end; curr_pos++)
+        {
+            if(eval(str_begin, str_end, curr_pos)) return true;
+        }
+
+        return false;
     };
 
     virtual EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos)
@@ -99,11 +111,11 @@ struct Node
     std::vector<Node*> children;
 };
 
-struct ProgramNode: public Node //Base node
+struct ExprNode: public Node //Base node
 {
     void print() override
     {
-        std::cout << "Program\n";
+        std::cout << "Expression\n";
         Node::print();
     }
 
@@ -111,25 +123,44 @@ struct ProgramNode: public Node //Base node
     {
         if(children.size() == 0) return false;
 
+        /*for(auto c: children)
+        {
+            c->eval(str_begin, str_end, curr_pos);
+        }*/
+
+
         return children[0]->eval(str_begin, str_end, curr_pos);
     }
+
+    /*void addChild(Node* node) override
+    {
+        if(children.size() == 0)    return Node::addChild(node);
+
+        ExprNode* exprNode = new ExprNode();
+
+        exprNode->Node::addChild(node);
+
+        return exprNode;
+    }*/
 };
 
-struct RegexNode: public Node
+struct StrNode: public Node
 {
     EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
     {
-        if(str_begin >= str_end || children.size() == 0) return false;
+        for(auto c: children)
+        {
+            if(!c->eval(str_begin, str_end, curr_pos)) return false;
 
-        EvalResult childEval = children[0]->eval(str_begin, str_end, curr_pos);
+            curr_pos++;
+        }
 
-        if(childEval)   return true; 
-        else            return eval(std::next(childEval.leaf_pos), str_end, curr_pos);
+        return true;
     }
 
     void print() override
     {
-        std::cout << "Regex\n";
+        std::cout << "Str\n";
         Node::print();
     }
 };
@@ -142,24 +173,7 @@ struct CharNode: public Node
 
     EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
     {
-        if(str_begin >= str_end) return false;
-
-        if(children.size() != 0)
-        {
-            EvalResult childEval = children[0]->eval(str_begin, str_end, curr_pos);
-            
-            if(!childEval)  return EvalResult(false, childEval.leaf_pos);
-            else            return EvalResult(*--curr_pos == value, childEval.leaf_pos);
-        }
-        else
-        {
-            curr_pos = std::find_if(str_begin, str_end, [&](const char it)
-            {
-                return it == value;
-            });
-
-            return EvalResult(curr_pos != str_end, curr_pos);
-        }
+        return *curr_pos == value && curr_pos != str_end;;
     }
 
     void print() override
@@ -183,8 +197,6 @@ struct ParenNode: public Node
     {
         return false;
     }
-
-    bool ignoreCaps = false;
 };
 
 struct OrNode: public Node
