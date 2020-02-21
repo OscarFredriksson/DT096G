@@ -16,7 +16,7 @@ namespace Parser
 
     ExprNode* buildTree(std::vector<Token> tokens);
 
-    Node* parseExpr(Iter& it, Iter end);
+    ASTNode* parseOp(Iter& it, Iter end);
 
     ParenNode* parseParen(Iter& it, Iter end);
 }

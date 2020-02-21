@@ -4,33 +4,6 @@
 #include "token.h"
 #include <algorithm>
 
-/*
-    Prgrm:  Oändlig mängd barn
-    Str:    Inga barn
-    +:      ett eller två barn
-    *:      ett eller två barn (vilken operand som ska upprepas, samt potentiell vidare text)
-    ():     ?
-    {}:     ett barn
-    \I:     
-    \O{}:   
-*/
-
-/*
-    lo* could.{3}
-
-         *
-        / \
-       lo   .
-        /        \
-    could {3}
-
-
-    promise to (Love+Hate) you
-
-*/
-
-
-
 using Iterator = std::string::iterator;
 
 struct EvalResult
@@ -66,25 +39,15 @@ struct EvalResult
     Iterator leaf_pos;
 };
 
-struct Node
+struct ASTNode
 {
-    bool eval(Iterator str_begin, Iterator str_end)
+    virtual EvalResult eval(Iterator& curr_pos, Iterator str_end)
     {
-        Iterator curr_pos = str_begin;
+        for(auto child: children)
+            if(!child->eval(curr_pos, str_end))
+                return false;
 
-        for(; curr_pos != str_end; curr_pos++)
-        {
-            if(eval(str_begin, str_end, curr_pos)) return true;
-        }
-
-        return false;
-    };
-
-    virtual EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos)
-    {
-        std::cout << "DENNA SKA EJ KÖRAS\n";
-
-        return false; 
+        return true; 
     }
 
     virtual void print()
@@ -103,111 +66,84 @@ struct Node
         depth--;
     }
 
-    void addChild(Node* node)
+    void addChild(ASTNode* node)
     {
         children.push_back(node);
     }
 
-    std::vector<Node*> children;
+    std::vector<ASTNode*> children;
 };
 
-struct ExprNode: public Node //Base node
+struct ExprNode: public ASTNode
 {
     void print() override
     {
         std::cout << "Expression\n";
-        Node::print();
+        ASTNode::print();
     }
-
-    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
-    {
-        if(children.size() == 0) return false;
-
-        /*for(auto c: children)
-        {
-            c->eval(str_begin, str_end, curr_pos);
-        }*/
-
-
-        return children[0]->eval(str_begin, str_end, curr_pos);
-    }
-
-    /*void addChild(Node* node) override
-    {
-        if(children.size() == 0)    return Node::addChild(node);
-
-        ExprNode* exprNode = new ExprNode();
-
-        exprNode->Node::addChild(node);
-
-        return exprNode;
-    }*/
 };
 
-struct StrNode: public Node
+struct OpNode: public ASTNode
 {
-    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    void print() override
     {
-        for(auto c: children)
-        {
-            if(!c->eval(str_begin, str_end, curr_pos)) return false;
-
-            curr_pos++;
-        }
-
-        return true;
+        std::cout << "Operand\n";
+        ASTNode::print();
     }
+};
 
+struct StrNode: public ASTNode
+{
     void print() override
     {
         std::cout << "Str\n";
-        Node::print();
+        ASTNode::print();
     }
 };
 
-struct CharNode: public Node
+struct CharNode: public ASTNode
 {
     CharNode(char value):
         value(value)
     {}
 
-    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
     {
-        return *curr_pos == value && curr_pos != str_end;;
+        return *curr_pos == value && curr_pos++ != str_end;
     }
 
     void print() override
     {
         std::cout << value << "\n";
-        Node::print();
+        ASTNode::print();
     }
 
     char value;
 };
 
-struct ParenNode: public Node
+struct ParenNode: public ASTNode
 {
     void print() override
     {
         std::cout << "()\n";
-        Node::print();
+        ASTNode::print();
     }
 
-    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
     {
         return false;
     }
 };
 
-struct OrNode: public Node
+struct OrNode: public ASTNode
 {
     void print() override
     {
         std::cout << "+\n";
-        Node::print();
+        ASTNode::print();
     }
 
-    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
     {
         if(children.size() != 2) 
         {
@@ -215,32 +151,32 @@ struct OrNode: public Node
             return false;
         }
 
-        if(children[0]->eval(str_begin, str_end, curr_pos)) return true;
-        else                                                return children[1]->eval(str_begin, str_end, curr_pos);
+        if(children[0]->eval(curr_pos, str_end)) return true;
+        else                                     return children[1]->eval(curr_pos, str_end);
     }
 };
 
-struct StarNode: public Node
+struct StarNode: public ASTNode
 {
     void print() override
     {
         std::cout << "*\n";
     }
 
-    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
     {
         return false;
     }
 };
 
-struct DotNode: public Node
+struct DotNode: public ASTNode
 {
     void print() override
     {
         std::cout << ".\n";
     }
 
-    EvalResult eval(Iterator str_begin, Iterator str_end, Iterator& curr_pos) override
+    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
     {
         return false;
     }

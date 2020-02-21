@@ -25,11 +25,9 @@ int main()
         for(auto token: tokens)  token.print();
         std::cout << "\n\n";
 
-        Node* root = Parser::buildTree(tokens);
+        ASTNode* root = Parser::buildTree(tokens);
 
         root->print();
-
-        std::cout << "\n" << root->Node::eval(txt.begin(), txt.end()) << "\n";
     }
  
     return 0;
