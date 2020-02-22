@@ -96,8 +96,13 @@ struct StrNode: public ASTNode
 {
     void print() override
     {
-        std::cout << "Str\n";
+        std::cout << "String\n";
         ASTNode::print();
+    }
+
+    bool empty()
+    {
+        return children.empty();
     }
 };
 
@@ -121,17 +126,12 @@ struct CharNode: public ASTNode
     char value;
 };
 
-struct ParenNode: public ASTNode
+struct GroupNode: public ASTNode
 {
     void print() override
     {
         std::cout << "()\n";
         ASTNode::print();
-    }
-
-    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
-    {
-        return false;
     }
 };
 
@@ -156,16 +156,23 @@ struct OrNode: public ASTNode
     }
 };
 
+struct CountNode: public ASTNode
+{
+    void print() override
+    {
+        std::cout << "{" << value << "}\n";
+        ASTNode::print();
+    }
+
+    int value;
+};
+
 struct StarNode: public ASTNode
 {
     void print() override
     {
         std::cout << "*\n";
-    }
-
-    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
-    {
-        return false;
+        ASTNode::print();
     }
 };
 
@@ -174,11 +181,25 @@ struct DotNode: public ASTNode
     void print() override
     {
         std::cout << ".\n";
+        ASTNode::print();
     }
+};
 
-    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
+struct GreedyNode: public ASTNode
+{
+    void print() override
     {
-        return false;
+        std::cout << "greedy\n";
+        ASTNode::print();
+    }
+};
+
+struct IgCapsNode: public ASTNode
+{
+    void print() override
+    {
+        std::cout << "\\I\n";
+        ASTNode::print();
     }
 };
 

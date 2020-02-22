@@ -8,17 +8,35 @@
 
 using Iter = std::vector<Token>::iterator;
 
+//<expr> =  <op> | <op><expr>
+//<op> = <ig-caps> | <group> | <or> | <str> |  <count>
+//<str> = <char>+
+//<ig-caps> = <op> <"\I">
+//<group> = <"("> <op> <")">
+//<or> = <str> <"+"> <str>
+//<count> = <char><"{N}"> | <group><"{N}"> | <dot><"{N}">
+//<star> = <char><"*"> | <group><"*">
+//<dot> = <".">
+//<char> = <"letter"> | <dot> | <star> 
+//<greedy> = <dot><star>
+
+/*
+    
+*/
+
 namespace Parser
 {
-    StrNode* parseStr(Iter& it, Iter end);
+    ExprNode* buildTree(Iter begin, Iter end);
 
-    OrNode* parseOr(StrNode* leftChild, Iter& it, Iter end);
+    StrNode* parseStr(Iter& begin, Iter end);
 
-    ExprNode* buildTree(std::vector<Token> tokens);
+    OrNode* parseOr(Iter& it, Iter end);
 
-    ASTNode* parseOp(Iter& it, Iter end);
+    OpNode* parseOp(Iter& begin, Iter end);
 
-    ParenNode* parseParen(Iter& it, Iter end);
+    GroupNode* parseGroup(Iter& begin, Iter end);
+
+    ExprNode* parseExpr(Iter& begin, Iter end);
 }
 
 #endif

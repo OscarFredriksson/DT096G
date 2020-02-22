@@ -1,27 +1,19 @@
 #include "parser.h"
 #include "lexer.h"
 
-
 //<expr> =  <op> | <op><expr>
-
 //<op> = <ig-caps> | <or> | <str> | <group> | <count>
-
 //<str> = <char>+
-
 //<ig-caps> = <op> <"\I">
-
 //<group> = <"("> <op> <")">
-
 //<or> = <str> <"+"> <str>
-
 //<count> = <char><"{N}"> | <group><"{N}"> | <dot><"{N}">
 //<star> = <char><"*"> | <group><"*">
-
 //<dot> = <".">
-
 //<char> = <"letter"> | <dot> | <star> 
-
 //<greedy> = <dot><star>
+
+
 
 /*  lo* c.{3}
 
@@ -41,101 +33,131 @@
                     <c>
                     <str>
                         <count>
-                            <dot>xs
+                            <dot>
 
     <str>
         <l>
         <star>
             <o>
 */
-ExprNode* Parser::buildTree(std::vector<Token> tokens)
+ExprNode* Parser::buildTree(Iter begin, Iter end)
 {
-    std::vector<Token>::iterator token_it = tokens.begin();
-    
-    ExprNode* root = new ExprNode();
-
-    ASTNode* prev_node = root;
-
-    for(;token_it != tokens.end();)
-    {
-        if(token_it->type == TokenType::CHAR)
-        {
-            ASTNode* node = parseOp(token_it, tokens.end());
-            prev_node->addChild(node);
-        }
-        else if(token_it->type == TokenType::LEFT_PAREN)
-        {
-            ASTNode* node = parseParen(token_it, tokens.end());
-            prev_node->addChild(node);
-        }
-        else
-        {
-            token_it++;
-        }
-    }
+    ExprNode* root = parseExpr(begin, end);
 
     return root;
 }
 
-OrNode* Parser::parseOr(StrNode* leftChild, Iter& it, Iter end)
+OrNode* Parser::parseOr(Iter& begin, Iter end)
 {
+    Iter prev_begin = begin;
+
+    StrNode* leftStr = parseStr(begin, end);
+
+    if(!leftStr)    return nullptr;
+
+    if(begin->type != TokenType::OR || begin == end) 
+    {
+        begin = prev_begin;
+        return nullptr;
+    }
+
+    begin++;
+    
     OrNode* orNode = new OrNode();
-    it++;
 
-    StrNode* rightChild = parseStr(it, end);
+    StrNode* rightStr = parseStr(begin, end);
 
-    orNode->addChild(leftChild);
-    orNode->addChild(rightChild);
+    if(!rightStr)   return nullptr;
+
+    orNode->addChild(leftStr);
+    orNode->addChild(rightStr);
 
     return orNode;
 }
 
-StrNode* Parser::parseStr(Iter& it, Iter end)
+StrNode* Parser::parseStr(Iter& begin, Iter end)
 {
     StrNode* strNode = new StrNode();
 
-    while(it->type == TokenType::CHAR && it != end)
+    while(begin->type == TokenType::CHAR && begin != end)
     {
-        CharNode* charNode = new CharNode(it->value);
+        CharNode* charNode = new CharNode(begin->value);
 
         strNode->addChild(charNode);
-        it++;
+        begin++;
     }
+
+    if(strNode->empty())    return nullptr;
 
     return strNode;
 }
 
-ASTNode* Parser::parseOp(Iter& it, Iter end)
+OpNode* Parser::parseOp(Iter& begin, Iter end)
 {
-    OpNode* root = new OpNode();
+    OpNode* opNode = new OpNode();
 
-    StrNode* node = parseStr(it, end);
+    GroupNode* groupNode = parseGroup(begin, end);
 
-    if(it == end)
+    if(groupNode)
     {
-        root->addChild(node);
+        opNode->addChild(groupNode);
+        return opNode;
     }
-    else if(it->type == TokenType::OR)
-    {
-        OrNode* orNode = parseOr(node, it, end);
 
-        root->addChild(orNode);
+    OrNode* orNode = parseOr(begin, end);
+
+    if(orNode)
+    {
+        opNode->addChild(orNode);
+        return opNode;
     }
-        
-    return root;
+
+    StrNode* strNode = parseStr(begin, end);
+
+    if(strNode)    
+    {
+        opNode->addChild(strNode);
+        return opNode;
+    }
+
+    return nullptr;
 }
 
-ParenNode* Parser::parseParen(Iter& it, Iter end)
+GroupNode* Parser::parseGroup(Iter& begin, Iter end)
 { 
-    std::cout << "parse paren\n";
+    GroupNode* groupNode = new GroupNode();
 
-    ParenNode* parenNode = new ParenNode();
+    if(begin->type != TokenType::LEFT_PAREN && begin != end) 
+    {
+        return nullptr;
+    }
 
-    it++;
+    OpNode* opNode = parseOp(++begin, end);
 
-    ASTNode* exprNode = parseOp(it, end);
+    if(!opNode) return nullptr;
 
-    parenNode->addChild(exprNode);
+    begin++;
 
-    return parenNode;
+    groupNode->addChild(opNode);
+
+    return groupNode;
+}
+
+ExprNode* Parser::parseExpr(Iter& begin, Iter end)
+{
+    ExprNode* exprNode = new ExprNode();
+
+    OpNode* opNode = parseOp(begin, end);
+
+    if(!opNode) return nullptr;
+
+    exprNode->addChild(opNode);
+
+    if(begin == end)    return exprNode;
+
+    ExprNode* exprNode2 = parseExpr(begin, end);
+
+    if(exprNode2)      exprNode->addChild(exprNode2);
+
+    return exprNode;
 }
