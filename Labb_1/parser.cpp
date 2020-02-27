@@ -14,32 +14,30 @@
 //<greedy> = <dot><star>
 
 
-
 /*  lo* c.{3}
 
 <expr>
     <op>
         <str>
-            <l>
-            <str>
-                <star>
-                    <o>
+            l
+            <star>
+                o
 
+<expr>
+    <op>
+        <str>
+            <l>
+            <star>
+                <o>
     <expr>
         <op>
             <str>
                 < >
-                <str>
-                    <c>
-                    <str>
-                        <count>
-                            <dot>
-
-    <str>
-        <l>
-        <star>
-            <o>
+                <c>
+                <count>
+                    <dot>
 */
+
 ExprNode* Parser::buildTree(Iter begin, Iter end)
 {
     ExprNode* root = parseExpr(begin, end);
@@ -75,16 +73,80 @@ OrNode* Parser::parseOr(Iter& begin, Iter end)
     return orNode;
 }
 
+CharNode* Parser::parseChar(Iter& begin, Iter end)
+{
+    if(begin->type != TokenType::CHAR) return nullptr;
+
+    CharNode* charNode = new CharNode(begin->value);
+
+    begin++;
+
+    return charNode;
+}
+
+DotNode* Parser::parseDot(Iter& begin, Iter end)
+{
+    if(begin->type != TokenType::DOT) return nullptr;
+
+    DotNode* dotNode = new DotNode();
+
+    begin++;
+
+    return dotNode;
+}
+
+StarNode* Parser::parseStar(Iter& begin, Iter end)
+{
+    if(begin->type != TokenType::CHAR) return nullptr;
+    
+    CharNode* charNode = new CharNode(begin->value);
+
+    begin++;
+
+    if(begin->type != TokenType::STAR)  return nullptr;
+
+    begin++;
+
+    StarNode* starNode = new StarNode();
+
+    starNode->addChild(charNode);
+
+    return starNode;
+}
+
 StrNode* Parser::parseStr(Iter& begin, Iter end)
 {
     StrNode* strNode = new StrNode();
 
-    while(begin->type == TokenType::CHAR && begin != end)
+    while(( begin->type == TokenType::CHAR || 
+            begin->type == TokenType::DOT) &&
+            begin != end)
     {
-        CharNode* charNode = new CharNode(begin->value);
+        Iter prev_begin = begin;
 
-        strNode->addChild(charNode);
-        begin++;
+        StarNode* starNode = parseStar(begin, end);
+
+        if(starNode)
+        {
+            strNode->addChild(starNode);
+            break;  //Star-node är terminal
+        }
+        
+        begin = prev_begin;
+        
+        CharNode* charNode = parseChar(begin, end);
+
+        if(charNode)
+        {
+            strNode->addChild(charNode);
+            continue;
+        }
+
+        DotNode* dotNode = parseDot(begin, end);
+
+        if(!dotNode)    return nullptr;
+
+        strNode->addChild(dotNode);
     }
 
     if(strNode->empty())    return nullptr;
@@ -134,17 +196,19 @@ GroupNode* Parser::parseGroup(Iter& begin, Iter end)
 
     OpNode* opNode = parseOp(++begin, end);
 
-    if(!opNode) return nullptr;
-
-    begin++;
-
+    if(!opNode || begin->type != TokenType::RIGHT_PAREN) return nullptr;
+    
     groupNode->addChild(opNode);
+
+    if(begin != end) begin++;
 
     return groupNode;
 }
 
 ExprNode* Parser::parseExpr(Iter& begin, Iter end)
 {
+    if(begin == end) return nullptr;
+
     ExprNode* exprNode = new ExprNode();
 
     OpNode* opNode = parseOp(begin, end);

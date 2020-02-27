@@ -28,7 +28,14 @@ int main()
         ASTNode* root = Parser::buildTree(tokens.begin(), tokens.end());
 
         if(!root)   std::cout << "Failed to build tree\n";
-        else        root->print();
+        else        
+        {
+            root->print();
+
+            std::string::iterator it = txt.begin();
+
+            std::cout << root->ASTNode::eval(it, txt.end()) << "\n";
+        }
     }
  
     return 0;

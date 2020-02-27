@@ -12,21 +12,17 @@ struct EvalResult
         result(result)
     {}
 
-    EvalResult(bool result, Iterator leaf_pos):
-        result(result), leaf_pos(leaf_pos)
-    {}
-
     EvalResult& operator=(const EvalResult& rhs)
     {
         result = rhs.result;
-        leaf_pos = rhs.leaf_pos;
 
         return *this;
     }
 
     operator bool() const
     {
-        return result;
+        //return result;
+        return first_found != last_found;
     }
     
     std::vector<std::string> found_groups;
@@ -35,8 +31,6 @@ struct EvalResult
     Iterator last_found;
 
     bool result;
-
-    Iterator leaf_pos;
 };
 
 struct ASTNode
@@ -76,6 +70,11 @@ struct ASTNode
 
 struct ExprNode: public ASTNode
 {
+    /*EvalResult eval(Iterator& curr_pos, Iterator str_end) override
+    {
+        ASTNode::eval(curr_pos, str_end);
+    }*/
+
     void print() override
     {
         std::cout << "Expression\n";
@@ -94,6 +93,15 @@ struct OpNode: public ASTNode
 
 struct StrNode: public ASTNode
 {
+    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
+    {
+        while(curr_pos != str_end)
+            if(ASTNode::eval(curr_pos, str_end)) 
+                return true;  
+
+        return false;
+    }
+
     void print() override
     {
         std::cout << "String\n";
@@ -114,7 +122,7 @@ struct CharNode: public ASTNode
 
     EvalResult eval(Iterator& curr_pos, Iterator str_end) override
     {
-        return *curr_pos == value && curr_pos++ != str_end;
+        return *curr_pos++ == value;
     }
 
     void print() override
@@ -151,8 +159,10 @@ struct OrNode: public ASTNode
             return false;
         }
 
-        if(children[0]->eval(curr_pos, str_end)) return true;
-        else                                     return children[1]->eval(curr_pos, str_end);
+        Iterator temp_it = curr_pos;
+
+        if(children[0]->eval(temp_it, str_end)) return true;
+        else                                    return children[1]->eval(curr_pos, str_end);
     }
 };
 
@@ -169,6 +179,18 @@ struct CountNode: public ASTNode
 
 struct StarNode: public ASTNode
 {
+    /*EvalResult eval(Iterator& curr_pos, Iterator end) override
+    {
+        if(!children[0]->eval(curr_pos, end)) 
+        {
+            return false;
+        }
+
+        while(children[0]->eval(curr_pos, end));
+
+        return true;
+    }*/
+    
     void print() override
     {
         std::cout << "*\n";
@@ -178,6 +200,11 @@ struct StarNode: public ASTNode
 
 struct DotNode: public ASTNode
 {
+    EvalResult eval(Iterator& curr_pos, Iterator end) override
+    {
+        return curr_pos++ != end;
+    }
+
     void print() override
     {
         std::cout << ".\n";
