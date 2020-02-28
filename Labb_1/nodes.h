@@ -21,8 +21,8 @@ struct EvalResult
 
     operator bool() const
     {
-        //return result;
-        return first_found != last_found;
+        return result;
+        //return first_found != last_found;
     }
     
     std::vector<std::string> found_groups;
@@ -77,7 +77,7 @@ struct ExprNode: public ASTNode
 
     void print() override
     {
-        std::cout << "Expression\n";
+        std::cout << "EXPRESSION\n";
         ASTNode::print();
     }
 };
@@ -86,7 +86,16 @@ struct OpNode: public ASTNode
 {
     void print() override
     {
-        std::cout << "Operand\n";
+        std::cout << "OPERAND\n";
+        ASTNode::print();
+    }
+};
+
+struct SubOpNode: public ASTNode
+{
+    void print() override
+    {
+        std::cout << "SUB-OPERAND\n";
         ASTNode::print();
     }
 };
@@ -104,7 +113,7 @@ struct StrNode: public ASTNode
 
     void print() override
     {
-        std::cout << "String\n";
+        std::cout << "STRING\n";
         ASTNode::print();
     }
 
@@ -138,7 +147,7 @@ struct GroupNode: public ASTNode
 {
     void print() override
     {
-        std::cout << "()\n";
+        std::cout << "GROUP\n";
         ASTNode::print();
     }
 };
@@ -147,7 +156,7 @@ struct OrNode: public ASTNode
 {
     void print() override
     {
-        std::cout << "+\n";
+        std::cout << "OR\n";
         ASTNode::print();
     }
 
@@ -168,9 +177,13 @@ struct OrNode: public ASTNode
 
 struct CountNode: public ASTNode
 {
+    CountNode(int value):
+        value(value)
+    {}
+
     void print() override
     {
-        std::cout << "{" << value << "}\n";
+        std::cout << "COUNT" << value << "\n";
         ASTNode::print();
     }
 
@@ -181,19 +194,15 @@ struct StarNode: public ASTNode
 {
     /*EvalResult eval(Iterator& curr_pos, Iterator end) override
     {
-        if(!children[0]->eval(curr_pos, end)) 
-        {
-            return false;
-        }
+        
 
-        while(children[0]->eval(curr_pos, end));
 
         return true;
     }*/
     
     void print() override
     {
-        std::cout << "*\n";
+        std::cout << "STAR\n";
         ASTNode::print();
     }
 };
@@ -207,7 +216,7 @@ struct DotNode: public ASTNode
 
     void print() override
     {
-        std::cout << ".\n";
+        std::cout << "DOT\n";
         ASTNode::print();
     }
 };
@@ -216,7 +225,7 @@ struct GreedyNode: public ASTNode
 {
     void print() override
     {
-        std::cout << "greedy\n";
+        std::cout << "GREEDY\n";
         ASTNode::print();
     }
 };
@@ -225,7 +234,7 @@ struct IgCapsNode: public ASTNode
 {
     void print() override
     {
-        std::cout << "\\I\n";
+        std::cout << "IGNORE-CAPS\n";
         ASTNode::print();
     }
 };

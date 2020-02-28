@@ -2,17 +2,16 @@
 #include "lexer.h"
 
 //<expr> =  <op> | <op><expr>
-//<op> = <ig-caps> | <or> | <str> | <group> | <count>
-//<str> = <char>+
+//<op> = <ig-caps> | <count> | <group> | <greedy> | <or> | <str>
+//<str> = <star> | (<dot> <char>)+
 //<ig-caps> = <op> <"\I">
 //<group> = <"("> <op> <")">
 //<or> = <str> <"+"> <str>
 //<count> = <char><"{N}"> | <group><"{N}"> | <dot><"{N}">
 //<star> = <char><"*"> | <group><"*">
 //<dot> = <".">
-//<char> = <"letter"> | <dot> | <star> 
+//<char> = <"letter">
 //<greedy> = <dot><star>
-
 
 /*  lo* c.{3}
 
@@ -88,11 +87,47 @@ DotNode* Parser::parseDot(Iter& begin, Iter end)
 {
     if(begin->type != TokenType::DOT) return nullptr;
 
+    Iter prev_begin = begin++;
+
+    if(begin->type == TokenType::STAR)
+    {
+        begin = prev_begin;
+        return nullptr;
+    }
+
     DotNode* dotNode = new DotNode();
+
+    return dotNode;
+}
+
+CountNode* Parser::parseCount(Iter& begin, Iter end)
+{
+    Iter prev_begin = begin;
+
+    ASTNode* node = parseDot(begin, end);
+
+    if(!node)
+    {
+        node = parseChar(begin, end);
+
+        if(!node) return nullptr;
+    }
+
+    if(begin->type != TokenType::COUNTER || begin == end) 
+    {
+        begin = prev_begin;
+        return nullptr;
+    }
+
+    CountNode* countNode = new CountNode(begin->value - '0');   //-'0' convert to int
+
+    countNode->addChild(node);
 
     begin++;
 
-    return dotNode;
+    std::cout << "parse count\n";
+
+    return countNode;
 }
 
 StarNode* Parser::parseStar(Iter& begin, Iter end)
@@ -114,6 +149,21 @@ StarNode* Parser::parseStar(Iter& begin, Iter end)
     return starNode;
 }
 
+GreedyNode* Parser::parseGreedy(Iter& begin, Iter end)
+{
+    GreedyNode* greedyNode = new GreedyNode();
+
+    if(begin->type != TokenType::DOT || begin == end) return nullptr;
+
+    begin++;
+
+    if(begin->type != TokenType::STAR || begin == end) return nullptr;
+
+    begin++;
+
+    return greedyNode;
+}
+
 StrNode* Parser::parseStr(Iter& begin, Iter end)
 {
     StrNode* strNode = new StrNode();
@@ -133,6 +183,14 @@ StrNode* Parser::parseStr(Iter& begin, Iter end)
         }
         
         begin = prev_begin;
+
+        CountNode* countNode = parseCount(begin, end);
+
+        if(countNode)
+        {
+            strNode->addChild(countNode);
+            break;  //Count-node är terminal
+        }
         
         CharNode* charNode = parseChar(begin, end);
 
@@ -144,7 +202,7 @@ StrNode* Parser::parseStr(Iter& begin, Iter end)
 
         DotNode* dotNode = parseDot(begin, end);
 
-        if(!dotNode)    return nullptr;
+        if(!dotNode)    break;
 
         strNode->addChild(dotNode);
     }
@@ -154,32 +212,94 @@ StrNode* Parser::parseStr(Iter& begin, Iter end)
     return strNode;
 }
 
+IgCapsNode* Parser::parseIgCaps(Iter& begin, Iter end)
+{
+    IgCapsNode* igCapsNode = new IgCapsNode();
+
+    Iter prev_begin = begin;
+
+    SubOpNode* subOpNode = parseSubOp(begin, end);
+
+    if(!subOpNode)
+    {
+        begin = prev_begin;
+        return nullptr;
+    }
+
+    if(begin->type != TokenType::IGNORE_CAPS || begin == end)
+    {
+        begin = prev_begin;
+        return nullptr;
+    }
+
+    begin++;
+
+    igCapsNode->addChild(subOpNode);
+
+    return igCapsNode;
+}
+
 OpNode* Parser::parseOp(Iter& begin, Iter end)
 {
     OpNode* opNode = new OpNode();
+
+    if(begin == end) return nullptr;
+
+    IgCapsNode* igCapsNode = parseIgCaps(begin, end);
+
+    if(igCapsNode)
+    {
+        opNode->addChild(igCapsNode);
+        return opNode;
+    }
+
+    SubOpNode* subOpNode = parseSubOp(begin, end);
+
+    if(!subOpNode)  return nullptr;
+
+    opNode->addChild(subOpNode);
+
+    return opNode;
+}
+
+SubOpNode* Parser::parseSubOp(Iter& begin, Iter end)
+{
+    SubOpNode* subOpNode = new SubOpNode();
 
     GroupNode* groupNode = parseGroup(begin, end);
 
     if(groupNode)
     {
-        opNode->addChild(groupNode);
-        return opNode;
+        subOpNode->addChild(groupNode);
+        return subOpNode;
+    }
+
+    Iter prev_begin = begin;
+
+    GreedyNode* greedyNode = parseGreedy(begin, end);
+
+    if(greedyNode)
+    {
+        subOpNode->addChild(greedyNode);
+        return subOpNode;
     }
 
     OrNode* orNode = parseOr(begin, end);
 
     if(orNode)
     {
-        opNode->addChild(orNode);
-        return opNode;
+        subOpNode->addChild(orNode);
+        return subOpNode;
     }
+
+    begin = prev_begin;
 
     StrNode* strNode = parseStr(begin, end);
 
     if(strNode)    
     {
-        opNode->addChild(strNode);
-        return opNode;
+        subOpNode->addChild(strNode);
+        return subOpNode;
     }
 
     return nullptr;
