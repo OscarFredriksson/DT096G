@@ -22,23 +22,41 @@ struct EvalResult
     operator bool() const
     {
         return result;
-        //return first_found != last_found;
     }
     
+    bool result;
+};
+
+struct Operands
+{
+    Operands(Iterator& begin, Iterator end):
+        begin(begin), end(end)
+    {}
+
+    Operands& operator=(const Operands& rhs)
+    {
+        begin = rhs.begin;
+        end = rhs.end;
+
+        igCaps = rhs.igCaps;
+
+        return *this;
+    }
+
     std::vector<std::string> found_groups;
 
-    Iterator first_found;
-    Iterator last_found;
+    Iterator begin;
+    Iterator end;
 
-    bool result;
+    bool igCaps = false;
 };
 
 struct ASTNode
 {
-    virtual EvalResult eval(Iterator& curr_pos, Iterator str_end)
+    virtual EvalResult eval(Operands& input)
     {
         for(auto child: children)
-            if(!child->eval(curr_pos, str_end))
+            if(!child->eval(input))
                 return false;
 
         return true; 
@@ -61,19 +79,54 @@ struct ASTNode
     }
 
     void addChild(ASTNode* node)
-    {
+    { 
         children.push_back(node);
     }
 
     std::vector<ASTNode*> children;
 };
 
+struct PrgmNode: public ASTNode
+{
+    EvalResult eval(Operands& input) override
+    {
+        while(input.begin != input.end)
+        {
+            bool match = true;
+
+            input.found_groups.clear();
+
+            input.found_groups.push_back("");
+
+            for(auto child: children)
+            {
+                if(!child->eval(input)) match = false;
+            }
+
+            if(match)   return true;
+        }
+
+        return false;
+    }
+
+    void print() override
+    {
+        std::cout << "PROGRAM\n";
+        ASTNode::print();
+    }
+};
+
 struct ExprNode: public ASTNode
 {
-    /*EvalResult eval(Iterator& curr_pos, Iterator str_end) override
+    EvalResult eval(Operands& input) override
     {
-        ASTNode::eval(curr_pos, str_end);
-    }*/
+        for(auto child: children)
+        {
+            if(!child->eval(input)) return false;
+        }
+
+        return true;
+    }
 
     void print() override
     {
@@ -102,15 +155,6 @@ struct SubOpNode: public ASTNode
 
 struct StrNode: public ASTNode
 {
-    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
-    {
-        while(curr_pos != str_end)
-            if(ASTNode::eval(curr_pos, str_end)) 
-                return true;  
-
-        return false;
-    }
-
     void print() override
     {
         std::cout << "STRING\n";
@@ -129,9 +173,22 @@ struct CharNode: public ASTNode
         value(value)
     {}
 
-    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
-    {
-        return *curr_pos++ == value;
+    EvalResult eval(Operands& input) override
+    {   
+        if(input.begin == input.end) return false;
+
+        bool match;
+
+        if(input.igCaps)
+            match = std::tolower(*input.begin) == std::tolower(value);
+        else
+            match = *input.begin == value;
+
+        if(match)   input.found_groups[0] += *input.begin;
+
+        input.begin++;
+
+        return match;
     }
 
     void print() override
@@ -145,6 +202,13 @@ struct CharNode: public ASTNode
 
 struct GroupNode: public ASTNode
 {
+    EvalResult eval(Operands& input) override
+    {
+        input.found_groups.push_back("");
+
+        return ASTNode::eval(input);
+    }
+
     void print() override
     {
         std::cout << "GROUP\n";
@@ -160,18 +224,16 @@ struct OrNode: public ASTNode
         ASTNode::print();
     }
 
-    EvalResult eval(Iterator& curr_pos, Iterator str_end) override
+    EvalResult eval(Operands& input) override
     {
-        if(children.size() != 2) 
+        Operands temp = input;
+
+        if(children[0]->eval(temp)) 
         {
-            std::cerr << "Too few arguments for or operator\n";
-            return false;
+            input.begin = temp.begin;
+            return true;
         }
-
-        Iterator temp_it = curr_pos;
-
-        if(children[0]->eval(temp_it, str_end)) return true;
-        else                                    return children[1]->eval(curr_pos, str_end);
+        else return children[1]->eval(input);
     }
 };
 
@@ -181,9 +243,19 @@ struct CountNode: public ASTNode
         value(value)
     {}
 
+    EvalResult eval(Operands& input) override
+    {
+        for(int i = 0; i < value; i++)
+        {
+            if(!children[0]->eval(input)) return false;
+        }
+
+        return true;
+    }
+
     void print() override
     {
-        std::cout << "COUNT" << value << "\n";
+        std::cout << "COUNT " << value << "\n";
         ASTNode::print();
     }
 
@@ -192,13 +264,16 @@ struct CountNode: public ASTNode
 
 struct StarNode: public ASTNode
 {
-    /*EvalResult eval(Iterator& curr_pos, Iterator end) override
+    EvalResult eval(Operands& input) override
     {
-        
+        if(!children[0]->eval(input)) return false;
 
+        while(children[0]->eval(input));
+        
+        input.begin--;    //Loopen går ett varv för långt när den blir false
 
         return true;
-    }*/
+    }
     
     void print() override
     {
@@ -209,9 +284,15 @@ struct StarNode: public ASTNode
 
 struct DotNode: public ASTNode
 {
-    EvalResult eval(Iterator& curr_pos, Iterator end) override
+    EvalResult eval(Operands& input) override
     {
-        return curr_pos++ != end;
+        bool match = input.begin != input.end;
+
+        if(match) input.found_groups[0] += *input.begin;
+
+        input.begin++;
+
+        return match;
     }
 
     void print() override
@@ -232,6 +313,17 @@ struct GreedyNode: public ASTNode
 
 struct IgCapsNode: public ASTNode
 {
+    EvalResult eval(Operands& input) override
+    {
+        input.igCaps = true;
+
+        bool ret = ASTNode::eval(input);
+
+        input.igCaps = false;
+
+        return ret;
+    }
+
     void print() override
     {
         std::cout << "IGNORE-CAPS\n";

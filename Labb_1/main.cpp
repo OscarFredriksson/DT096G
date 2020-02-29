@@ -21,20 +21,34 @@ int main()
 
         std::vector<Token> tokens = lexer.tokenize();
         
-        std::cout << "\nTokens: ";
+        /*std::cout << "\nTokens: ";
         for(auto token: tokens)  token.print();
-        std::cout << "\n\n";
+        std::cout << "\n\n";*/
+
+        std::cout << "\n";
 
         ASTNode* root = Parser::buildTree(tokens.begin(), tokens.end());
 
         if(!root)   std::cout << "Failed to build tree\n";
         else        
         {
-            root->print();
+            //root->print();
 
             std::string::iterator it = txt.begin();
 
-            std::cout << root->ASTNode::eval(it, txt.end()) << "\n";
+            Operands input(it, txt.end());
+
+            if(root->eval(input))
+            {
+                std::cout << "MATCH: " << input.found_groups[0] << "\n";    
+            }
+            else
+            {
+                std::cout << "Coudln't find regexp\n";
+            }
+            
+            
+            //std::cout << root->eval(input) << "\n";
         }
     }
  

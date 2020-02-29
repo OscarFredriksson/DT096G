@@ -6,24 +6,28 @@
 #include "nodes.h"
 #include "token.h"
 
-//<expr> =  <op> | <op><expr>
-//<op> = <ig-caps> | <sub-op>
-//<sub-op> = <group> | <greedy> | <or> | <str>
-//<str> = <star> | <count> | (<dot> | <char>)+
-//<ig-caps> = <sub-op> <"\I">
-//<group> = <"("> <op> <")">
-//<or> = <str> <"+"> <str>
-//<count> = <char><"{N}"> | <dot><"{N}">
-//<star> = <char><"*">
-//<dot> = <".">
-//<char> = <"letter">
-//<greedy> = <dot><star>
+/* Grammar:
+
+    <prgm> = <expr>
+    <expr> =  <op> | <op><expr>
+    <op> = <ig-caps> | <sub-op>
+    <sub-op> = <group> | <greedy> | <or> | <str>
+    <str> = <star> | <count> | (<dot> | <char>)+
+    <ig-caps> = <sub-op> <"\I">
+    <group> = <"("> <op> <")">
+    <or> = <str> <"+"> <str>
+    <count> = <char><"{N}"> | <dot><"{N}">
+    <star> = <char><"*">
+    <dot> = <".">
+    <char> = <"letter">
+    <greedy> = <dot><star>
+*/
 
 using Iter = std::vector<Token>::iterator;
 
 namespace Parser
 {
-    ExprNode* buildTree(Iter begin, Iter end);
+    PrgmNode* buildTree(Iter begin, Iter end);
 
     CharNode* parseChar(Iter& begin, Iter end);
 

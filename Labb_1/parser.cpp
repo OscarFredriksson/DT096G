@@ -1,45 +1,32 @@
 #include "parser.h"
 #include "lexer.h"
 
-//<expr> =  <op> | <op><expr>
-//<op> = <ig-caps> | <count> | <group> | <greedy> | <or> | <str>
-//<str> = <star> | (<dot> <char>)+
-//<ig-caps> = <op> <"\I">
-//<group> = <"("> <op> <")">
-//<or> = <str> <"+"> <str>
-//<count> = <char><"{N}"> | <group><"{N}"> | <dot><"{N}">
-//<star> = <char><"*"> | <group><"*">
-//<dot> = <".">
-//<char> = <"letter">
-//<greedy> = <dot><star>
+/* Grammar:
 
-/*  lo* c.{3}
-
-<expr>
-    <op>
-        <str>
-            l
-            <star>
-                o
-
-<expr>
-    <op>
-        <str>
-            <l>
-            <star>
-                <o>
-    <expr>
-        <op>
-            <str>
-                < >
-                <c>
-                <count>
-                    <dot>
+    <prgm> = <expr>
+    <expr> =  <op> | <op><expr>
+    <op> = <ig-caps> | <sub-op>
+    <sub-op> = <group> | <greedy> | <or> | <str>
+    <str> = <star> | <count> | (<dot> | <char>)+
+    <ig-caps> = <sub-op> <"\I">
+    <group> = <"("> <op> <")">
+    <or> = <str> <"+"> <str>
+    <count> = <char><"{N}"> | <dot><"{N}">
+    <star> = <char><"*">
+    <dot> = <".">
+    <char> = <"letter">
+    <greedy> = <dot><star>
 */
 
-ExprNode* Parser::buildTree(Iter begin, Iter end)
+PrgmNode* Parser::buildTree(Iter begin, Iter end)
 {
-    ExprNode* root = parseExpr(begin, end);
+    PrgmNode* root = new PrgmNode();
+
+    ExprNode* exprNode = parseExpr(begin, end);
+
+    if(!exprNode)   return nullptr;
+
+    root->addChild(exprNode);
 
     return root;
 }
@@ -124,8 +111,6 @@ CountNode* Parser::parseCount(Iter& begin, Iter end)
     countNode->addChild(node);
 
     begin++;
-
-    std::cout << "parse count\n";
 
     return countNode;
 }
