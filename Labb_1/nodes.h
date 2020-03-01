@@ -29,26 +29,38 @@ struct EvalResult
 
 struct Operands
 {
-    Operands(Iterator& begin, Iterator end):
-        begin(begin), end(end)
-    {}
+    Operands(Iterator begin, Iterator end):
+        init_begin(begin), begin(begin), end(end)
+    {
+        greedy_end = end;
+    }
 
     Operands& operator=(const Operands& rhs)
     {
         begin = rhs.begin;
         end = rhs.end;
+        greedy_end = rhs.greedy_end;
 
         igCaps = rhs.igCaps;
+        inGroup = rhs.inGroup;
+        foundGreedy = rhs.foundGreedy;
+
+        found_groups = rhs.found_groups;
 
         return *this;
     }
 
-    std::vector<std::string> found_groups;
+    Iterator init_begin;
 
     Iterator begin;
     Iterator end;
+    Iterator greedy_end;
 
     bool igCaps = false;
+    bool inGroup = false;
+    bool foundGreedy = false;
+
+    std::vector<std::string> found_groups;
 };
 
 struct ASTNode
@@ -88,8 +100,10 @@ struct ASTNode
 
 struct PrgmNode: public ASTNode
 {
-    EvalResult eval(Operands& input) override
+    EvalResult doEval(Operands& input)
     {
+        input.begin = input.init_begin;
+
         while(input.begin != input.end)
         {
             bool match = true;
@@ -104,6 +118,23 @@ struct PrgmNode: public ASTNode
             }
 
             if(match)   return true;
+        }
+
+        return false;
+    }
+
+    EvalResult eval(Operands& input) override
+    {
+        if(doEval(input)) return true;
+
+        if(input.foundGreedy)
+        {
+            while(input.greedy_end != input.init_begin)
+            {
+                if(doEval(input)) return true;
+
+                input.greedy_end--;
+            }
         }
 
         return false;
@@ -184,7 +215,13 @@ struct CharNode: public ASTNode
         else
             match = *input.begin == value;
 
-        if(match)   input.found_groups[0] += *input.begin;
+        if(match)   
+        {
+            input.found_groups[0] += *input.begin;
+            
+            if(input.inGroup)   
+                input.found_groups.back() += *input.begin;
+        }
 
         input.begin++;
 
@@ -206,7 +243,13 @@ struct GroupNode: public ASTNode
     {
         input.found_groups.push_back("");
 
-        return ASTNode::eval(input);
+        input.inGroup = true;
+
+        bool match = ASTNode::eval(input);
+
+        input.inGroup = false;
+
+        return match;
     }
 
     void print() override
@@ -228,12 +271,12 @@ struct OrNode: public ASTNode
     {
         Operands temp = input;
 
-        if(children[0]->eval(temp)) 
+        if(children[0]->eval(input)) return true;
+        else 
         {
-            input.begin = temp.begin;
-            return true;
+            input = temp;
+            return children[1]->eval(input);
         }
-        else return children[1]->eval(input);
     }
 };
 
@@ -266,6 +309,8 @@ struct StarNode: public ASTNode
 {
     EvalResult eval(Operands& input) override
     {
+        if(input.begin == input.end) return false;
+
         if(!children[0]->eval(input)) return false;
 
         while(children[0]->eval(input));
@@ -286,9 +331,15 @@ struct DotNode: public ASTNode
 {
     EvalResult eval(Operands& input) override
     {
-        bool match = input.begin != input.end;
+        bool match = input.begin < input.end;
 
-        if(match) input.found_groups[0] += *input.begin;
+        if(match) 
+        {
+            input.found_groups[0] += *input.begin;
+
+            if(input.inGroup)   
+                input.found_groups.back() += *input.begin;
+        }
 
         input.begin++;
 
@@ -304,6 +355,21 @@ struct DotNode: public ASTNode
 
 struct GreedyNode: public ASTNode
 {
+    EvalResult eval(Operands& input) override
+    {
+        input.foundGreedy = true;
+
+        Iterator temp = input.end;
+        
+        input.end = input.greedy_end;
+
+        bool match = ASTNode::eval(input);
+
+        input.end = temp;
+
+        return match;
+    }
+
     void print() override
     {
         std::cout << "GREEDY\n";

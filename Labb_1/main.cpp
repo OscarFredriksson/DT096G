@@ -25,9 +25,9 @@ int main()
         for(auto token: tokens)  token.print();
         std::cout << "\n\n";*/
 
-        std::cout << "\n";
-
         ASTNode* root = Parser::buildTree(tokens.begin(), tokens.end());
+
+        std::cout << "\n";
 
         if(!root)   std::cout << "Failed to build tree\n";
         else        
@@ -40,15 +40,17 @@ int main()
 
             if(root->eval(input))
             {
-                std::cout << "MATCH: " << input.found_groups[0] << "\n";    
+                int group_index = 0;
+
+                Token lastToken = tokens.back();
+
+                if(lastToken.type == TokenType::OUTPUT_GROUP)
+                    group_index = lastToken.value - '0';
+
+                std::cout << "MATCH: " << input.found_groups[group_index] << "\n";    
             }
             else
-            {
-                std::cout << "Coudln't find regexp\n";
-            }
-            
-            
-            //std::cout << root->eval(input) << "\n";
+                std::cout << "Coudln't find regexp\n";            
         }
     }
  

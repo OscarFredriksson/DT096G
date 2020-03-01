@@ -1,7 +1,7 @@
 SRC = $(wildcard *.cpp)
 TARGET = main
 
-FLAGS = -std=c++17 -o
+FLAGS = -g -std=c++17 -o
 
 clean: 
 	rm -f $(TARGET)

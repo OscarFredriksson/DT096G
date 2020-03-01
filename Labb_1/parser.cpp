@@ -9,7 +9,7 @@
     <sub-op> = <group> | <greedy> | <or> | <str>
     <str> = <star> | <count> | (<dot> | <char>)+
     <ig-caps> = <sub-op> <"\I">
-    <group> = <"("> <op> <")">
+    <group> = <"("> <expr> <")">
     <or> = <str> <"+"> <str>
     <count> = <char><"{N}"> | <dot><"{N}">
     <star> = <char><"*">
@@ -145,6 +145,12 @@ GreedyNode* Parser::parseGreedy(Iter& begin, Iter end)
     if(begin->type != TokenType::STAR || begin == end) return nullptr;
 
     begin++;
+
+    StarNode* starNode = new StarNode();
+
+    starNode->addChild(new DotNode());
+
+    greedyNode->addChild(starNode);
 
     return greedyNode;
 }
@@ -299,11 +305,11 @@ GroupNode* Parser::parseGroup(Iter& begin, Iter end)
         return nullptr;
     }
 
-    OpNode* opNode = parseOp(++begin, end);
+    ExprNode* exprNode = parseExpr(++begin, end);
 
-    if(!opNode || begin->type != TokenType::RIGHT_PAREN) return nullptr;
+    if(!exprNode || begin->type != TokenType::RIGHT_PAREN) return nullptr;
     
-    groupNode->addChild(opNode);
+    groupNode->addChild(exprNode);
 
     if(begin != end) begin++;
 

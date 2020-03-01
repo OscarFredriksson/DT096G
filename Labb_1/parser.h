@@ -14,7 +14,7 @@
     <sub-op> = <group> | <greedy> | <or> | <str>
     <str> = <star> | <count> | (<dot> | <char>)+
     <ig-caps> = <sub-op> <"\I">
-    <group> = <"("> <op> <")">
+    <group> = <"("> <expr> <")">
     <or> = <str> <"+"> <str>
     <count> = <char><"{N}"> | <dot><"{N}">
     <star> = <char><"*">
