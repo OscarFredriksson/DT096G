@@ -6,27 +6,6 @@
 
 using Iterator = std::string::iterator;
 
-struct EvalResult
-{
-    EvalResult(bool result):
-        result(result)
-    {}
-
-    EvalResult& operator=(const EvalResult& rhs)
-    {
-        result = rhs.result;
-
-        return *this;
-    }
-
-    operator bool() const
-    {
-        return result;
-    }
-    
-    bool result;
-};
-
 struct Operands
 {
     Operands(Iterator begin, Iterator end):
@@ -65,7 +44,7 @@ struct Operands
 
 struct ASTNode
 {
-    virtual EvalResult eval(Operands& input)
+    virtual bool eval(Operands& input)
     {
         for(auto child: children)
             if(!child->eval(input))
@@ -100,11 +79,31 @@ struct ASTNode
 
 struct PrgmNode: public ASTNode
 {
-    EvalResult doEval(Operands& input)
+    std::vector<std::string> eval(Iterator begin, Iterator end)
+    {
+        Operands input(begin, end);
+
+        if(eval(input)) return input.found_groups;
+
+        if(input.foundGreedy)
+        {
+            while(input.greedy_end != input.init_begin)
+            {
+                if(eval(input)) return input.found_groups;
+
+                input.greedy_end--;
+            }
+        }
+
+        return std::vector<std::string>();
+    }
+
+
+    bool eval(Operands& input) override
     {
         input.begin = input.init_begin;
 
-        while(input.begin != input.end)
+        while(input.begin < input.end)
         {
             bool match = true;
 
@@ -123,23 +122,6 @@ struct PrgmNode: public ASTNode
         return false;
     }
 
-    EvalResult eval(Operands& input) override
-    {
-        if(doEval(input)) return true;
-
-        if(input.foundGreedy)
-        {
-            while(input.greedy_end != input.init_begin)
-            {
-                if(doEval(input)) return true;
-
-                input.greedy_end--;
-            }
-        }
-
-        return false;
-    }
-
     void print() override
     {
         std::cout << "PROGRAM\n";
@@ -149,7 +131,7 @@ struct PrgmNode: public ASTNode
 
 struct ExprNode: public ASTNode
 {
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {
         for(auto child: children)
         {
@@ -204,7 +186,7 @@ struct CharNode: public ASTNode
         value(value)
     {}
 
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {   
         if(input.begin == input.end) return false;
 
@@ -239,7 +221,7 @@ struct CharNode: public ASTNode
 
 struct GroupNode: public ASTNode
 {
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {
         input.found_groups.push_back("");
 
@@ -267,7 +249,7 @@ struct OrNode: public ASTNode
         ASTNode::print();
     }
 
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {
         Operands temp = input;
 
@@ -286,7 +268,7 @@ struct CountNode: public ASTNode
         value(value)
     {}
 
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {
         for(int i = 0; i < value; i++)
         {
@@ -307,7 +289,7 @@ struct CountNode: public ASTNode
 
 struct StarNode: public ASTNode
 {
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {
         if(input.begin == input.end) return false;
 
@@ -329,7 +311,7 @@ struct StarNode: public ASTNode
 
 struct DotNode: public ASTNode
 {
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {
         bool match = input.begin < input.end;
 
@@ -355,7 +337,7 @@ struct DotNode: public ASTNode
 
 struct GreedyNode: public ASTNode
 {
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {
         input.foundGreedy = true;
 
@@ -379,7 +361,7 @@ struct GreedyNode: public ASTNode
 
 struct IgCapsNode: public ASTNode
 {
-    EvalResult eval(Operands& input) override
+    bool eval(Operands& input) override
     {
         input.igCaps = true;
 
