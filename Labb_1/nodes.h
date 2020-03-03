@@ -98,7 +98,6 @@ struct PrgmNode: public ASTNode
         return std::vector<std::string>();
     }
 
-
     bool eval(Operands& input) override
     {
         input.begin = input.init_begin;

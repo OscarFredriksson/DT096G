@@ -29,13 +29,10 @@ int main()
 
         PrgmNode* root = Parser::buildTree(tokens.begin(), tokens.end());
 
-        std::cout << "\n";
-
         if(!root) std::cout << "Failed to build tree\n";
         else
         {
             //root->print();
-
 
             std::vector<std::string> matches = root->eval(txt.begin(), txt.end());
 

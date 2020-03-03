@@ -8,19 +8,19 @@
 
 /* Grammar:
 
-    <prgm> = <expr>
-    <expr> =  <op> | <op><expr>
-    <op> = <ig-caps> | <sub-op>
-    <sub-op> = <group> | <greedy> | <or> | <str>
-    <str> = <star> | <count> | (<dot> | <char>)+
-    <ig-caps> = <sub-op> <"\I">
-    <group> = <"("> <expr> <")">
-    <or> = <str> <"+"> <str>
-    <count> = <char><"{N}"> | <dot><"{N}">
-    <star> = <char><"*">
-    <dot> = <".">
-    <char> = <"letter">
-    <greedy> = <dot><star>
+    <prgm>      ::= <expr>
+    <expr>      ::=  <op> | <op><expr>
+    <op>        ::= <ig-caps> | <sub-op>
+    <sub-op>    ::= <group> | <greedy> | <or> | <str>
+    <str>       ::= <star> | <count> | (<dot> | <char>)+
+    <ig-caps>   ::= <sub-op> <"\I">
+    <group>     ::= <"("> <expr> <")">
+    <or>        ::= <str> <"+"> <str>
+    <count>     ::= <char><"{N}"> | <dot><"{N}">
+    <star>      ::= <char><"*"> | <dot><"*">
+    <dot>       ::= <".">
+    <char>      ::= <"letter">
+    <greedy>    ::= <star>
 */
 
 using Iter = std::vector<Token>::iterator;
