@@ -1,11 +1,13 @@
 # DT096G
 Programspråksteori
 
-### Labb 0: Skapa en parser som kan förstå addition. 
+### Labb 0: Addition parser 
 
 ### Labb 1: Regex parser
 
 ### Labb 2: Javascript prototype mechanism
+
+### Labb 3: Pow calculated at compile time
 
 ## Labb 1:
 
