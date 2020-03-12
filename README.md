@@ -5,6 +5,10 @@ Programspråksteori
 
 ### Labb 1: Regex parser
 
+### Labb 2: Javascript prototype mechanism
+
+## Labb 1:
+
 #### Operationer
 
 Operator  | Operation              | Förklaring                                         | Syntax
