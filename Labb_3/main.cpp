@@ -14,31 +14,31 @@
 template<int Exp>
 struct Pow
 {
-    double exp(double x)
+    double operator()(double base)
     {
         Pow<Exp/2> p;
 
-        double result = p.exp(x) * p.exp(x);
+        double result = p(base) * p(base);
 
         if(Exp % 2 == 0)    return result;
-        else if(Exp > 0)    return x * result;    
-        else                return result / x;    
+        else if(Exp > 0)    return base * result;    
+        else                return result / base;    
     }
 };
 
 template<>
 struct Pow<1>
 {
-    double exp(double x)
+    double operator()(double base)
     {
-        return x;
+        return base;
     }
 };
 
 template<>
 struct Pow<0>
 {
-    double exp(double x)
+    double operator()(double base)
     {
         return 1.0;
     }
@@ -46,9 +46,9 @@ struct Pow<0>
 
 int main()
 {
-    Pow<-5> p;
+    Pow<5> p;
 
-    std::cout << p.exp(2);
+    std::cout << p(2) << "\n";
 
     return 0;
 }
